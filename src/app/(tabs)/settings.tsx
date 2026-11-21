@@ -1,22 +1,27 @@
-import { ScrollView, Switch, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, Switch, Text, View } from "react-native";
 import { ChevronRight, Fingerprint, LogOut, Smartphone } from "lucide-react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ScreenHeader } from "@/components/screen-header";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { router } from "expo-router";
+import { clearSession, getBiometricPreference, setBiometricPreference } from "@/lib/session";
+import { authenticateForAppResume, getBiometricStatus } from "@/lib/biometrics";
 
 function SettingRow({
   label,
   description,
   icon,
   trailing,
+  onPress,
 }: {
   label: string;
   description: string;
   icon: React.ReactNode;
   trailing?: React.ReactNode;
+  onPress?: () => void;
 }) {
-  return (
-    <View className="flex-row items-center gap-3 border-b border-slate-200 px-4 py-4 last:border-b-0">
+  const content = (
+    <>
       <View className="h-9 w-9 items-center justify-center border border-slate-200 bg-slate-50">
         {icon}
       </View>
@@ -25,6 +30,24 @@ function SettingRow({
         <Text className="mt-0.5 text-[11px] leading-4 text-slate-500">{description}</Text>
       </View>
       {trailing}
+    </>
+  );
+
+  if (onPress) {
+    return (
+      <Pressable
+        accessibilityRole="button"
+        onPress={onPress}
+        className="flex-row items-center gap-3 border-b border-slate-200 px-4 py-4"
+      >
+        {content}
+      </Pressable>
+    );
+  }
+
+  return (
+    <View className="flex-row items-center gap-3 border-b border-slate-200 px-4 py-4 last:border-b-0">
+      {content}
     </View>
   );
 }
@@ -32,6 +55,40 @@ function SettingRow({
 export default function SettingsScreen() {
   const [biometric, setBiometric] = useState(true);
   const [notifications, setNotifications] = useState(true);
+
+  useEffect(() => {
+    void getBiometricPreference().then(setBiometric);
+  }, []);
+
+  async function handleBiometricChange(enabled: boolean) {
+    if (enabled) {
+      const status = await getBiometricStatus();
+      if (!status.compatible || !status.enrolled) {
+        Alert.alert(
+          "Biometric lock unavailable",
+          "Set up Face ID, Touch ID, or fingerprint unlocking on this device first.",
+        );
+        return;
+      }
+      const authenticated = await authenticateForAppResume();
+      if (!authenticated) return;
+    }
+    setBiometric(enabled);
+    await setBiometricPreference(enabled);
+  }
+
+  function handleSignOut() {
+    Alert.alert("Sign out?", "This will end the session and revoke push access.", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Sign out",
+        style: "destructive",
+        onPress: () => {
+          void clearSession().finally(() => router.replace("/auth/sign-in"));
+        },
+      },
+    ]);
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-[#F6FAFE]" edges={["top"]}>
@@ -63,7 +120,7 @@ export default function SettingsScreen() {
             trailing={
               <Switch
                 value={biometric}
-                onValueChange={setBiometric}
+                onValueChange={(enabled) => void handleBiometricChange(enabled)}
                 trackColor={{ false: "#CBD5E1", true: "#171C1F" }}
                 thumbColor="#FFFFFF"
               />
@@ -80,6 +137,7 @@ export default function SettingsScreen() {
             description="End this session and revoke push access"
             icon={<LogOut size={16} strokeWidth={1.7} className="text-red-600" />}
             trailing={<ChevronRight size={16} strokeWidth={1.7} className="text-slate-400" />}
+            onPress={handleSignOut}
           />
         </View>
 
