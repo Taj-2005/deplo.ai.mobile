@@ -52,6 +52,19 @@ npm run lint
 npm run doctor
 ```
 
+## Development workflow
+
+Use Expo Go for the initial interface pass. For native modules or packages that
+require custom native code, create a development build with EAS or a local
+prebuild instead of relying on Expo Go.
+
+When adding navigation, keep routes under `src/app/` and use the Expo Router
+APIs for links and search parameters. Keep shared components outside the route
+tree under `src/components/`.
+
+When adding NativeWind styles, use semantic Deplo brand colors from
+`tailwind.config.js` and verify the result on both native platforms and web.
+
 ## NativeWind
 
 NativeWind utilities are enabled through `global.css`, `metro.config.js`, and
