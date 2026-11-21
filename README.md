@@ -65,6 +65,22 @@ tree under `src/components/`.
 When adding NativeWind styles, use semantic Deplo brand colors from
 `tailwind.config.js` and verify the result on both native platforms and web.
 
+## Commit conventions
+
+Use conventional commit subjects with a single, descriptive scope:
+
+```text
+feat(mobile): add secure GitHub authentication
+fix(auth): preserve session across app resume
+docs(readme): explain native development builds
+chore(deps): align Expo SDK dependencies
+test(logs): cover filtering and first-error navigation
+```
+
+Commit subjects must describe the implementation change, use the imperative
+tense, remain under 72 characters, and contain no AI or internal-tool
+attribution.
+
 ## NativeWind
 
 NativeWind utilities are enabled through `global.css`, `metro.config.js`, and
