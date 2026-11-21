@@ -70,16 +70,17 @@ When adding NativeWind styles, use semantic Deplo brand colors from
 Use conventional commit subjects with a single, descriptive scope:
 
 ```text
-feat(mobile): add secure GitHub authentication
-fix(auth): preserve session across app resume
-docs(readme): explain native development builds
-chore(deps): align Expo SDK dependencies
-test(logs): cover filtering and first-error navigation
+feat(mobile): add secure GitHub authentication for Android and iOS
+fix(auth): preserve the verified session across app resume and cold starts
+docs(readme): explain Expo Go limitations and native development builds
+chore(deps): align all Expo packages with the installed SDK version
+test(logs): cover stage filtering, search, and first-error navigation
 ```
 
-Commit subjects must describe the implementation change, use the imperative
-tense, remain under 72 characters, and contain no AI or internal-tool
-attribution.
+Commit subjects must describe the implementation change and its user-facing or
+technical purpose, use the imperative tense, remain readable at 72 characters
+or fewer, and contain no AI or internal-tool attribution. Avoid vague subjects
+such as `fix bug`, `update code`, or `add feature`.
 
 ## NativeWind
 
