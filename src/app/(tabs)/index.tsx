@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { RefreshControl, ScrollView, Text, View } from "react-native";
+import { Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
+import { router } from "expo-router";
 import { Activity, AlertTriangle, CheckCircle2, Cloud, Server } from "lucide-react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MetricCard } from "@/components/metric-card";
@@ -88,8 +89,10 @@ export default function OverviewScreen() {
 
           <View className="border border-slate-200 bg-white">
             {recentDeployments.map((deployment, index) => (
-              <View
+              <Pressable
                 key={deployment.id}
+                accessibilityRole="button"
+                onPress={() => router.push(`/deployments/${deployment.id}`)}
                 className={`p-4 ${index > 0 ? "border-t border-slate-200" : ""}`}
               >
                 <View className="flex-row items-start justify-between gap-3">
@@ -104,7 +107,7 @@ export default function OverviewScreen() {
                   <StatusPill label={deployment.status} tone={deployment.tone} />
                 </View>
                 <Text className="mt-3 text-[12px] text-slate-500">{deployment.detail}</Text>
-              </View>
+              </Pressable>
             ))}
           </View>
         </View>

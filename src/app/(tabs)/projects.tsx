@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { ScrollView, Text, TextInput, View } from "react-native";
+import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { router } from "expo-router";
 import { Boxes, FolderGit2, Lock, Search } from "lucide-react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ScreenHeader } from "@/components/screen-header";
@@ -39,8 +40,10 @@ export default function ProjectsScreen() {
 
         <View className="mx-5 border border-slate-200 bg-white">
           {filtered.map((project, index) => (
-            <View
+            <Pressable
               key={project.owner}
+              accessibilityRole="button"
+              onPress={() => router.push(`/project/${project.name}`)}
               className={`flex-row items-center gap-3 p-4 ${index > 0 ? "border-t border-slate-200" : ""}`}
             >
               <View className="h-11 w-11 items-center justify-center border border-slate-200 bg-slate-50">
@@ -60,7 +63,7 @@ export default function ProjectsScreen() {
                 </Text>
               </View>
               <StatusPill label={project.status} tone={project.tone} />
-            </View>
+            </Pressable>
           ))}
 
           {filtered.length === 0 ? (
