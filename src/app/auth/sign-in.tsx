@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Alert, Pressable, Text, View } from "react-native";
 import { router } from "expo-router";
+import * as Linking from "expo-linking";
 import { FolderGit2 } from "lucide-react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { setSessionToken } from "@/lib/session";
@@ -17,7 +18,7 @@ export default function SignInScreen() {
       (typeof Constants.expoConfig?.extra?.apiUrl === "string"
         ? Constants.expoConfig.extra.apiUrl.replace(/\/$/, "")
         : "https://www.deplo.in");
-    const redirectUrl = "deplo://auth/callback";
+    const redirectUrl = Linking.createURL("/auth/callback");
 
     void WebBrowser.openAuthSessionAsync(
       `${apiOrigin}/api/v1/auth/github`,

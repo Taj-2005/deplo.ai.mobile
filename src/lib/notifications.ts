@@ -7,6 +7,12 @@ import type { DeviceRegistration, NotificationCategory, NotificationPreferences 
 
 const DEVICE_PUSH_TOKEN_KEY = "deplo.notifications.push-token";
 
+export async function clearPushRegistration(): Promise<void> {
+  await SecureStore.deleteItemAsync(DEVICE_PUSH_TOKEN_KEY, {
+    keychainService: "ai.deplo.mobile.notifications",
+  });
+}
+
 const DEFAULT_CATEGORIES: NotificationPreferences["categories"] = {
   "deployment-success": true,
   "deployment-failed": true,

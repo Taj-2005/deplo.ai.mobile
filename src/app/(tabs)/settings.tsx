@@ -6,13 +6,13 @@ import { useEffect, useState } from "react";
 import { router } from "expo-router";
 import { clearSession, getBiometricPreference, setBiometricPreference } from "@/lib/session";
 import { authenticateForAppResume, getBiometricStatus } from "@/lib/biometrics";
-import { registerDeviceForPush } from "@/lib/notifications";
+import { clearPushRegistration, registerDeviceForPush } from "@/lib/notifications";
 import {
   readNotificationPreferences,
   writeNotificationPreferences,
 } from "@/lib/notification-preferences";
 import { clearDeviceIdentity, getOrCreateDeviceId } from "@/lib/device";
-import { revokeMobileDevice } from "@/lib/api";
+import { revokeMobileDevice, verifySession } from "@/lib/api";
 
 function SettingRow({
   label,
@@ -62,12 +62,22 @@ function SettingRow({
 export default function SettingsScreen() {
   const [biometric, setBiometric] = useState(true);
   const [notifications, setNotifications] = useState(true);
+  const [account, setAccount] = useState<{
+    name: string;
+    email: string;
+  } | null>(null);
 
   useEffect(() => {
     void getBiometricPreference().then(setBiometric);
     void readNotificationPreferences().then((preferences) =>
       setNotifications(preferences.enabled),
     );
+    void verifySession()
+      .then((profile) => setAccount({
+        name: profile.name || profile.githubLogin,
+        email: profile.email,
+      }))
+      .catch(() => setAccount(null));
   }, []);
 
   async function handleBiometricChange(enabled: boolean) {
@@ -114,6 +124,7 @@ export default function SettingsScreen() {
             .then((deviceId) => revokeMobileDevice(deviceId))
             .catch(() => undefined)
             .finally(async () => {
+              await clearPushRegistration();
               await clearDeviceIdentity();
               await clearSession();
               router.replace("/auth/sign-in");
@@ -186,8 +197,12 @@ export default function SettingsScreen() {
           <Text className="font-mono text-[10px] font-bold uppercase tracking-wider text-slate-500">
             Account
           </Text>
-          <Text className="mt-2 text-[13px] font-bold text-deplo-black">Taj</Text>
-          <Text className="mt-0.5 font-mono text-[11px] text-slate-500">taj@example.com</Text>
+          <Text className="mt-2 text-[13px] font-bold text-deplo-black">
+            {account?.name ?? "Session account"}
+          </Text>
+          <Text className="mt-0.5 font-mono text-[11px] text-slate-500">
+            {account?.email ?? "Verify session to load profile"}
+          </Text>
         </View>
 
         <Text className="mt-6 text-center font-mono text-[10px] text-slate-400">
