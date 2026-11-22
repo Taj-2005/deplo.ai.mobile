@@ -1,0 +1,68 @@
+name: Android APK release
+
+on:
+  push:
+    branches:
+      - "**"
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    name: Build and publish Android APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out pushed commit
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Set up Expo and EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          packager: npm
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build APK with EAS
+        run: eas build --platform android --profile preview --non-interactive --wait --json > eas-build.json
+
+      - name: Download APK
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          set -euo pipefail
+          apk_url="$(jq -er 'if type == "array" then .[0].artifacts.buildUrl // empty else .artifacts.buildUrl // empty end' eas-build.json)"
+          curl --fail --location --retry 3 \
+            --header "Authorization: Bearer ${EXPO_TOKEN}" \
+            "${apk_url}" \
+            --output "deplo-android-${GITHUB_SHA::7}.apk"
+          test -s "deplo-android-${GITHUB_SHA::7}.apk"
+
+      - name: Prepare release metadata
+        id: release
+        run: |
+          branch_slug="${GITHUB_REF_NAME//\//-}"
+          short_sha="${GITHUB_SHA::7}"
+          echo "tag=android-${branch_slug}-${short_sha}" >> "$GITHUB_OUTPUT"
+          echo "name=Android APK · ${GITHUB_REF_NAME} · ${short_sha}" >> "$GITHUB_OUTPUT"
+          echo "apk=deplo-android-${short_sha}.apk" >> "$GITHUB_OUTPUT"
+
+      - name: Publish APK to GitHub Releases
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ steps.release.outputs.tag }}
+          name: ${{ steps.release.outputs.name }}
+          target_commitish: ${{ github.sha }}
+          prerelease: ${{ github.ref != 'refs/heads/main' }}
+          make_latest: ${{ github.ref == 'refs/heads/main' }}
+          generate_release_notes: true
+          files: ${{ steps.release.outputs.apk }}

@@ -127,6 +127,19 @@ npx eas-cli@latest build --profile production --platform all
 Native credentials, push credentials, and production environment variables
 must be configured in the owner's EAS account. They must not be committed.
 
+## Android APK releases
+
+`.github/workflows/android-apk-release.yml` runs on every branch push. It builds
+an installable APK with the EAS `preview` profile and attaches it to a
+commit-specific GitHub Release. Pushes to `main` create regular releases;
+other branches create prereleases.
+
+Before the workflow can build, add an `EXPO_TOKEN` Actions secret in the
+GitHub repository settings and make sure EAS has Android signing credentials
+for this project. The workflow needs `contents: write`, which is declared in
+the workflow file. GitHub releases are created automatically after a
+successful build.
+
 ## Development workflow
 
 Use Expo Go for the initial interface pass. For native modules or packages that
