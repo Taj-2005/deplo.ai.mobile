@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Deplo Mobile — prompt verification</title>
+  <style>
+    :root { color-scheme:light; --paper:#f6f4ef; --card:#fff; --ink:#21201b; --muted:#5b584f; --rule:#dad6c9; --accent:#2e6b4f; --soft:#e4eee7; --sunk:#fbfaf7; --on-accent:#fff; box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px); }
+    html { scroll-padding-top:env(safe-area-inset-top,0px); }
+    @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { color-scheme:dark; --paper:#1a1915; --card:#23221d; --ink:#ece9df; --muted:#a9a598; --rule:#3a382f; --accent:#78c4a0; --soft:#243629; --sunk:#1f1e19; --on-accent:#10221a; } }
+    :root[data-theme="dark"] { color-scheme:dark; --paper:#1a1915; --card:#23221d; --ink:#ece9df; --muted:#a9a598; --rule:#3a382f; --accent:#78c4a0; --soft:#243629; --sunk:#1f1e19; --on-accent:#10221a; }
+    * { box-sizing:border-box; } body { margin:0; background:var(--paper); color:var(--ink); font-family:Georgia,serif; }
+    main { max-width:820px; margin:auto; padding:56px 24px 80px; overflow-wrap:anywhere; }
+    header { border-bottom:1px solid var(--rule); padding-bottom:28px; }
+    .kicker,.tag,.meta,code { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
+    .kicker { color:var(--muted); font-size:13px; } h1 { font-size:clamp(34px,6vw,52px); line-height:1.05; font-weight:500; margin:14px 0; }
+    h2 { font-size:26px; font-weight:500; margin:48px 0 8px; } .dek,.note { color:var(--muted); line-height:1.65; font-size:17px; }
+    .meta { display:flex; flex-wrap:wrap; gap:10px 24px; color:var(--muted); font-size:12px; }
+    .links { display:flex; flex-wrap:wrap; gap:10px; margin-top:24px; } a { color:var(--accent); }
+    .links a { padding:10px 14px; border:1px solid var(--rule); background:var(--card); border-radius:4px; text-decoration:none; font:13px ui-monospace,SFMono-Regular,Menlo,monospace; }
+    .links a.primary { color:var(--on-accent); background:var(--accent); border-color:var(--accent); }
+    .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); border:1px solid var(--rule); margin-top:20px; }
+    .stat { padding:18px; background:var(--card); border:1px solid var(--rule); } .stat b { display:block; color:var(--accent); font:24px ui-monospace,SFMono-Regular,Menlo,monospace; }
+    .stat span { color:var(--muted); font-size:13px; } .entry { background:var(--card); border:1px solid var(--rule); border-radius:5px; margin:18px 0; overflow:hidden; }
+    .entry-head { display:flex; justify-content:space-between; gap:16px; padding:12px 16px; border-bottom:1px dashed var(--rule); }
+    .tag { color:var(--accent); background:var(--soft); padding:4px 7px; font-size:11px; } .meta { align-self:center; }
+    .entry-body { padding:18px 16px; } .label { color:var(--muted); font:11px ui-monospace,SFMono-Regular,Menlo,monospace; }
+    blockquote { margin:8px 0 16px; font:14px/1.65 ui-monospace,SFMono-Regular,Menlo,monospace; white-space:pre-wrap; }
+    .prompt-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px; margin-top:14px; }
+    .prompt-card { padding:14px; background:var(--sunk); border:1px solid var(--rule); border-radius:4px; } .prompt-card blockquote { margin-bottom:0; }
+    .quality { display:inline-block; margin-top:8px; color:var(--accent); font:12px ui-monospace,SFMono-Regular,Menlo,monospace; }
+    .note { font-size:15px; border-top:1px solid var(--rule); padding-top:12px; margin:0; }
+    table { width:100%; border-collapse:collapse; background:var(--card); } th,td { text-align:left; padding:12px; border-bottom:1px solid var(--rule); }
+    th { color:var(--muted); font:12px ui-monospace,SFMono-Regular,Menlo,monospace; } footer { border-top:1px solid var(--rule); margin-top:52px; padding-top:18px; color:var(--muted); font:12px/1.7 ui-monospace,SFMono-Regular,Menlo,monospace; }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="kicker">deplo.ai — mobile project · prompt-history verification</div>
+    <h1>Deplo in your pocket</h1>
+    <p class="dek">A project record for the React Native mobile app: product discovery, Expo and NativeWind foundations, deployment and notification flows, backend integration, and automated Android APK releases.</p>
+    <div class="meta"><span>Project: <b>Deplo Mobile</b></span><span>Platform: <b>Expo · React Native</b></span><span>Prompt groups: <b>Copilot + Codex</b></span><span>Updated: <b>23 November 2026</b></span><span>History: <b>chat-history/mobile-chat-history</b></span></div>
+    <div class="links">
+      <a class="primary" href="https://github.com/Taj-2005/deplo.ai.mobile">Mobile repository →</a>
+      <a href="https://github.com/Taj-2005/deplo.ai.mobile/commits/main">Implementation commits</a>
+      <a href="https://github.com/Taj-2005/deplo.ai.mobile/tree/chat-history/mobile-chat-history">Prompt history branch</a>
+      <a href="https://github.com/Taj-2005/deplo.ai.mobile/blob/chat-history/mobile-chat-history/docs/MOBILE_CHAT_HISTORY.md">Full prompt record</a>
+      <a href="https://github.com/Taj-2005/deplo-ai/tree/feat/live-apps-feedback">Backend handoff</a>
+    </div>
+  </header>
+
+  <section>
+    <h2>At a glance</h2>
+    <p class="note">The record separates the product and implementation direction from the actual repository checkpoints. Copilot and Codex prompts are grouped by the work they drove.</p>
+    <div class="stats">
+      <div class="stat"><b>Expo</b><span>React Native client</span></div>
+      <div class="stat"><b>NativeWind</b><span>mobile styling system</span></div>
+      <div class="stat"><b>Push</b><span>device and notification sync</span></div>
+      <div class="stat"><b>APK</b><span>GitHub Actions release workflow</span></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Copilot prompts</h2>
+    <p class="note">Product understanding, submission coverage, mobile implementation, and backend contract handoff.</p>
+    <article class="entry"><div class="entry-head"><span class="tag">product discovery</span><span class="meta">Copilot · context</span></div><div class="entry-body"><div class="prompt-grid"><div class="prompt-card"><div class="label">PROMPT</div><blockquote>Study Deplo.ai and its existing web and desktop applications before designing the mobile client. Inspect the repositories, product flows, UI patterns, terminology, colors, and deployment workflow. Explain the product problem, users, and core concepts across projects, deployments, environments, logs, monitoring, and notifications. Use that evidence to define a phone-first experience that feels like Deplo and does not invent unsupported product behavior.</blockquote><span class="quality">Grounds product decisions in existing applications</span></div><div class="prompt-card"><div class="label">EVIDENCE</div><p class="note">The supplied submission and handoff describe the mobile platform, product flows, design alignment, and backend dependencies.</p></div></div></div></article>
+    <article class="entry"><div class="entry-head"><span class="tag">Expo foundation</span><span class="meta">Copilot · setup</span></div><div class="entry-body"><div class="prompt-grid"><div class="prompt-card"><div class="label">PROMPT</div><blockquote>Create a production-oriented React Native application using the official Expo workflow, `npx create-expo-app`, TypeScript, Expo Router, and NativeWind. Keep it self-contained in the mobile repository, align naming and visual patterns with Deplo, and include the scripts and setup documentation needed by another engineer. Make meaningful subject-only commits on `main`, push to `https://github.com/Taj-2005/deplo.ai.mobile`, and report remote-confirmed commits without placeholder history.</blockquote><span class="quality">Names tools, repository, history, and delivery evidence</span></div><div class="prompt-card"><div class="label">EVIDENCE</div><p class="note">The repository is an Expo mobile project; implementation and workflow history is linked above.</p></div></div></div></article>
+    <article class="entry"><div class="entry-head"><span class="tag">submission plan</span><span class="meta">Copilot · requirements</span></div><div class="entry-body"><div class="prompt-grid"><div class="prompt-card"><div class="label">PROMPT</div><blockquote>Read `APP DEV Project Submission.md` end to end and map every requirement to app screens, flows, platform behavior, technical components, and acceptance criteria. Identify dependencies and risks, order the work into phases, and separate mobile-client work from backend support. Present a traceable implementation plan before coding so every submission requirement is accounted for.</blockquote><span class="quality">Makes coverage traceable and orders dependencies</span></div><div class="prompt-card"><div class="label">EVIDENCE</div><p class="note">The supplied submission prompt and detailed implementation plan inform the mobile and backend sections in the linked record.</p></div></div></div></article>
+    <article class="entry"><div class="entry-head"><span class="tag">mobile implementation</span><span class="meta">Copilot · app</span></div><div class="entry-body"><div class="prompt-grid"><div class="prompt-card"><div class="label">PROMPT</div><blockquote>Implement the complete Deplo mobile client from the approved requirements and project context. Build polished, accessible Android and iOS experiences for authentication, project and deployment overview, deployment details, logs, environment requirements, monitoring, notification preferences, and history. Use Deplo's design system, real API data, loading/empty/error/offline states, secure session storage, platform-safe navigation, and Expo push-token registration. Complete the code without waiting for a native build, and document backend dependencies and device-only verification.</blockquote><span class="quality">Defines flows, state handling, security, and delivery boundary</span></div><div class="prompt-card"><div class="label">EVIDENCE</div><p class="note">Deployment-driven overview and push-device/notification-history client work are present in the mobile commit history.</p></div></div></div></article>
+    <article class="entry"><div class="entry-head"><span class="tag">frontend scope</span><span class="meta">Copilot · boundaries</span></div><div class="entry-body"><div class="prompt-grid"><div class="prompt-card"><div class="label">PROMPT</div><blockquote>Complete the mobile frontend and API client in the mobile repository. Leave backend implementation in its own repository. For missing endpoints, payloads, authentication behavior, or push capabilities, document the exact contract and prepare a separate backend implementation prompt for the backend owner.</blockquote><span class="quality">Keeps repository ownership explicit</span></div></div></div></article>
+    <article class="entry"><div class="entry-head"><span class="tag">backend handoff</span><span class="meta">Copilot · API support</span></div><div class="entry-body"><div class="prompt-grid"><div class="prompt-card"><div class="label">PROMPT</div><blockquote>In the Deplo backend repository, inspect existing authentication, project, deployment, monitoring, database, and notification architecture. Add mobile OAuth returning to `deplo://auth/callback` with seven-day JWTs; authenticated device registration, listing, and revocation using Expo push tokens; global and per-project notification preferences; and notification history with read-state updates. Send push alerts for deployment start/completion/failure, environment-variable pauses, and project down/recovered events. Include route, `projectId`, and relevant `deploymentId`; deliver through Expo to FCM/APNs with transient retries and invalid-token cleanup. Encrypt environment values and push tokens at rest, never return environment values, restrict mobile management APIs to mobile JWTs, and add migrations, authorization, tests, and documentation.</blockquote><span class="quality">Defines security, event coverage, payloads, and API ownership</span></div><div class="prompt-card"><div class="label">EVIDENCE</div><p class="note">The backend handoff is maintained separately at <code>feat/live-apps-feedback</code>, latest supplied commit <code>1685c87</code>; production deployment and physical-device delivery remain unverified.</p></div></div></div></article>
+  </section>
+
+  <section>
+    <h2>Codex prompts</h2>
+    <p class="note">Client completion, backend integration, and the Android release pipeline.</p>
+    <article class="entry"><div class="entry-head"><span class="tag">mobile continuation</span><span class="meta">Codex · repository work</span></div><div class="entry-body"><div class="prompt-grid"><div class="prompt-card"><div class="label">PROMPT</div><blockquote>Inspect the mobile repository, project guidance, submission requirements, and current implementation before editing. Complete remaining app work in the existing Expo and NativeWind patterns. Integrate only against confirmed backend routes and payloads, protect credentials and environment values, and report implemented behavior separately from device or production verification still required.</blockquote><span class="quality">Starts from repository evidence and preserves honest status</span></div><div class="prompt-card"><div class="label">EVIDENCE</div><p class="note">Current implementation checkpoints are listed below and in the linked mobile prompt record.</p></div></div></div></article>
+    <article class="entry"><div class="entry-head"><span class="tag">deployment overview</span><span class="meta">Codex · data accuracy</span></div><div class="entry-body"><div class="prompt-grid"><div class="prompt-card"><div class="label">PROMPT</div><blockquote>Replace static or misleading project-health summaries with values derived from API deployment data. Define active, successful, and failed states from the backend contract; represent no deployments, partial data, and request failures without implying health when status is unknown. Preserve the overview design and provide clear loading, empty, and error states.</blockquote><span class="quality">Addresses source of truth and ambiguous states</span></div><div class="prompt-card"><div class="label">EVIDENCE</div><p class="note">Commit <code>95ded30</code> derives the overview from deployment data.</p></div></div></div></article>
+    <article class="entry"><div class="entry-head"><span class="tag">backend integration</span><span class="meta">Codex · auth and push</span></div><div class="entry-body"><div class="prompt-grid"><div class="prompt-card"><div class="label">PROMPT</div><blockquote>Integrate with the mobile API contract on backend branch `feat/live-apps-feedback` at commit `1685c87`. Use the `deplo://auth/callback` OAuth flow and seven-day mobile JWT, persist sessions in secure storage, and synchronize Expo push registrations by device ID. Load and revoke devices; read and update global and per-project notification preferences; fetch history and mark notifications read. Navigate notification taps using `route`, `projectId`, and optional `deploymentId`. Match actual schemas, show API failures clearly, and never log credentials or tokens.</blockquote><span class="quality">Connects client behavior to the named backend contract</span></div><div class="prompt-card"><div class="label">EVIDENCE</div><p class="note">Commit <code>70b4126</code> syncs push devices and notification history in the mobile client.</p></div></div></div></article>
+    <article class="entry"><div class="entry-head"><span class="tag">Android release CI</span><span class="meta">Codex · every push</span></div><div class="entry-body"><div class="prompt-grid"><div class="prompt-card"><div class="label">PROMPT</div><blockquote>Build a release APK on every branch push and attach it to a GitHub Release. Publish a normal release from `main` and a prerelease from other branches using unique branch-and-commit tags. Build locally with Expo prebuild and Gradle `assembleRelease`, set `versionCode` from `GITHUB_RUN_NUMBER`, and grant only the GitHub release permission needed. Avoid EAS credentials when the build runs in Actions; describe the output as a sideloadable APK unless Play Store signing and publication are configured.</blockquote><span class="quality">Covers trigger, artifact, release type, versioning, and credentials</span></div><div class="prompt-card"><div class="label">EVIDENCE</div><p class="note">Commits <code>d529362</code> and <code>88238f6</code> establish the release workflow and local Gradle APK build.</p></div></div></div></article>
+    <article class="entry"><div class="entry-head"><span class="tag">build reproducibility</span><span class="meta">Codex · Android SDK</span></div><div class="entry-body"><div class="prompt-grid"><div class="prompt-card"><div class="label">PROMPT</div><blockquote>Investigate the Actions failure where `android-actions/setup-android@v3` calls `sdkmanager tools` and exits because that obsolete package is unavailable. Use the runner's preinstalled Android SDK, accept licenses non-interactively, and export the SDK path for Gradle. Preserve the release build and upload steps, validate the workflow configuration, and push the fix.</blockquote><span class="quality">Anchors the fix to the observed failure and build path</span></div><div class="prompt-card"><div class="label">EVIDENCE</div><p class="note">Commit <code>3b01ea9</code> configures the workflow to use the preinstalled Android SDK. A successful Actions run has not been confirmed here.</p></div></div></div></article>
+    <article class="entry"><div class="entry-head"><span class="tag">prompt history</span><span class="meta">Codex · this report</span></div><div class="entry-body"><div class="prompt-grid"><div class="prompt-card"><div class="label">PROMPT</div><blockquote>Create a mobile prompt-verification page modeled on the Deplo Desktop report. Clearly separate Copilot and Codex work, include the relevant mobile and backend handoffs, and link the report to a dedicated prompt-history branch. Keep the mobile implementation repository distinct from the backend repository and state verification limits accurately.</blockquote><span class="quality">Defines presentation, history scope, links, and evidence boundaries</span></div><div class="prompt-card"><div class="label">EVIDENCE</div><p class="note">This report and <code>docs/MOBILE_CHAT_HISTORY.md</code> are committed on the dedicated mobile chat-history branch.</p></div></div></div></article>
+  </section>
+
+  <section>
+    <h2>Implementation checkpoints</h2>
+    <table>
+      <tr><th>Area</th><th>Outcome</th></tr>
+      <tr><td>Mobile foundation</td><td>Expo React Native client with NativeWind and Expo Router.</td></tr>
+      <tr><td>Project overview</td><td>Overview status is derived from deployment data (<code>95ded30</code>).</td></tr>
+      <tr><td>Push integration</td><td>Client synchronizes device registrations and notification history (<code>70b4126</code>).</td></tr>
+      <tr><td>APK workflow</td><td>GitHub Actions builds release APKs locally with Gradle; SDK setup uses the runner's preinstalled SDK (<code>88238f6</code>, <code>3b01ea9</code>).</td></tr>
+      <tr><td>Backend</td><td>Separate branch <code>feat/live-apps-feedback</code>, commit <code>1685c87</code>; production deployment not verified.</td></tr>
+      <tr><td>Verification</td><td>Latest CI success, physical-device push handling, and production backend behavior still need confirmation.</td></tr>
+    </table>
+  </section>
+
+  <section><h2>Verification standard</h2><p class="note">Each prompt identifies the project scope, intended behavior, meaningful constraints, and observable outcome. Implementation evidence is tied to repository history; CI, physical-device, and production claims are limited to what has been confirmed.</p></section>
+  <footer>Prepared 23 November 2026. The linked prompt record preserves the Copilot and Codex mobile project handoffs and implementation checkpoints.</footer>
+</main>
+</body>
+</html>
