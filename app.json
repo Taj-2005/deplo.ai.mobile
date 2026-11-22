@@ -33,8 +33,7 @@
           "icon": "./assets/android-icon-monochrome.png",
           "color": "#0A0A0A"
         }
-      ],
-      "expo-secure-store"
+      ]
     ]
   }
 }

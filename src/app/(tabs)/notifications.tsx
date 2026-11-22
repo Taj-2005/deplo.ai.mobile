@@ -1,4 +1,5 @@
-import { ScrollView, Text, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
+import { router } from "expo-router";
 import { AlertTriangle, CheckCircle2, PauseCircle } from "lucide-react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ScreenHeader } from "@/components/screen-header";
@@ -12,6 +13,7 @@ const alerts = [
     title: "payment-api deployment failed",
     detail: "Dependency install · Cannot resolve package",
     time: "8 min ago",
+    route: "/deployments/dep_api",
   },
   {
     id: "2",
@@ -21,6 +23,7 @@ const alerts = [
     title: "storefront is live",
     detail: "Frontend responded successfully in 142 ms",
     time: "24 min ago",
+    route: "/deployments/dep_storefront",
   },
   {
     id: "3",
@@ -30,6 +33,7 @@ const alerts = [
     title: "docs-preview requires environment values",
     detail: "2 variables are required before deployment",
     time: "Yesterday",
+    route: "/deployments/dep_api",
   },
 ];
 
@@ -47,8 +51,10 @@ export default function NotificationsScreen() {
           {alerts.map((alert, index) => {
             const Icon = alert.icon;
             return (
-              <View
+              <Pressable
                 key={alert.id}
+                accessibilityRole="button"
+                onPress={() => router.push(alert.route as never)}
                 className={`flex-row gap-3 p-4 ${index > 0 ? "border-t border-slate-200" : ""}`}
               >
                 <View className={`h-10 w-10 items-center justify-center border ${alert.surfaceClass}`}>
@@ -63,7 +69,7 @@ export default function NotificationsScreen() {
                     {alert.time}
                   </Text>
                 </View>
-              </View>
+              </Pressable>
             );
           })}
         </View>

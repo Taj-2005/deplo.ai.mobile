@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { router } from "expo-router";
 import { clearSession, getBiometricPreference, setBiometricPreference } from "@/lib/session";
 import { authenticateForAppResume, getBiometricStatus } from "@/lib/biometrics";
+import { registerDeviceForPush } from "@/lib/notifications";
 
 function SettingRow({
   label,
@@ -77,6 +78,19 @@ export default function SettingsScreen() {
     await setBiometricPreference(enabled);
   }
 
+  async function handlePushChange(enabled: boolean) {
+    setNotifications(enabled);
+    if (!enabled) return;
+
+    const registration = await registerDeviceForPush();
+    Alert.alert(
+      registration.pushToken ? "Push notifications enabled" : "Push notifications unavailable",
+      registration.pushToken
+        ? `This ${registration.platform} device is registered for Deplo alerts.`
+        : "Allow notification permission or use a physical device to complete registration.",
+    );
+  }
+
   function handleSignOut() {
     Alert.alert("Sign out?", "This will end the session and revoke push access.", [
       { text: "Cancel", style: "cancel" },
@@ -107,7 +121,7 @@ export default function SettingsScreen() {
             trailing={
               <Switch
                 value={notifications}
-                onValueChange={setNotifications}
+                onValueChange={(enabled) => void handlePushChange(enabled)}
                 trackColor={{ false: "#CBD5E1", true: "#171C1F" }}
                 thumbColor="#FFFFFF"
               />
@@ -131,6 +145,14 @@ export default function SettingsScreen() {
             description="This phone · Trusted"
             icon={<Smartphone size={16} strokeWidth={1.7} className="text-slate-600" />}
             trailing={<ChevronRight size={16} strokeWidth={1.7} className="text-slate-400" />}
+            onPress={() => void registerDeviceForPush().then((registration) => {
+              Alert.alert(
+                registration.pushToken ? "Device registered" : "Device registration unavailable",
+                registration.pushToken
+                  ? `${registration.deviceName} is registered for push alerts.`
+                  : "Allow notification permission or use a physical device.",
+              );
+            })}
           />
           <SettingRow
             label="Sign out"
