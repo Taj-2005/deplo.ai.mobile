@@ -5,6 +5,7 @@ import { ArrowLeft, Eye, EyeOff, KeyRound } from "lucide-react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { getDeployment } from "@/lib/mobile-data";
 import { fetchDeployment, provideDeploymentEnv } from "@/lib/api";
+import { isDemoMode } from "@/lib/app-config";
 
 export default function DeploymentEnvironmentScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -115,6 +116,11 @@ export default function DeploymentEnvironmentScreen() {
               return;
             }
             try {
+              if (isDemoMode) {
+                Alert.alert("Demo mode", "Environment values were not sent to a server.");
+                router.replace(`/deployments/${id}`);
+                return;
+              }
               const result = await provideDeploymentEnv(
                 id,
                 Object.entries(values).map(([key, value]) => ({ key, value })),

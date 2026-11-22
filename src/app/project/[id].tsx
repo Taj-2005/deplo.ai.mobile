@@ -7,6 +7,7 @@ import { getLatestDeployment, getProject } from "@/lib/mobile-data";
 import { useCachedData } from "@/hooks/use-cached-data";
 import { fetchDeployments, fetchRepositories } from "@/lib/api";
 import type { Repository } from "@/lib/deplo-api";
+import { isDemoMode } from "@/lib/app-config";
 
 export default function ProjectDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -26,13 +27,23 @@ export default function ProjectDetailScreen() {
           url: `https://github.com/${fallbackProject.repository}`,
         }]
       : [],
-    fetchRepositories,
+    isDemoMode ? async () => fallbackProject ? [{
+      id,
+      name: fallbackProject.name,
+      fullName: fallbackProject.repository,
+      isPrivate: fallbackProject.private,
+      defaultBranch: fallbackProject.branch,
+      updatedAt: "",
+      language: "TypeScript",
+      description: null,
+      url: `https://github.com/${fallbackProject.repository}`,
+    }] : [] : fetchRepositories,
   );
   const projectRepository = repositoriesState.data?.find((repository) => repository.id === id);
   const latestDeploymentState = useCachedData(
     `deplo.mobile.project.${id}.deployments`,
     getLatestDeployment(id) ? [getLatestDeployment(id)!] : [],
-    () => fetchDeployments().then((deployments) =>
+    isDemoMode ? async () => getLatestDeployment(id) ? [getLatestDeployment(id)!] : [] : () => fetchDeployments().then((deployments) =>
       deployments.filter((deployment) => deployment.repositoryId === id),
     ),
   );

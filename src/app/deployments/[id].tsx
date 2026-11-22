@@ -10,6 +10,7 @@ import { deploymentLogs, getDeployment } from "@/lib/mobile-data";
 import { redeployRepository, fetchDeployment, cancelDeployment } from "@/lib/api";
 import { useCachedData } from "@/hooks/use-cached-data";
 import type { Deployment } from "@/types/deplo";
+import { isDemoMode } from "@/lib/app-config";
 
 export default function DeploymentDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -17,7 +18,7 @@ export default function DeploymentDetailScreen() {
   const deploymentState = useCachedData<Deployment | null>(
     `deplo.mobile.deployment.${id}`,
     fallbackDeployment ?? null,
-    async () => {
+    isDemoMode ? async () => fallbackDeployment ?? null : async () => {
       const detail = await fetchDeployment(id);
       return {
         id: detail.id,
@@ -78,6 +79,11 @@ export default function DeploymentDetailScreen() {
     setActionPending(true);
     setActionError(null);
     try {
+      if (isDemoMode) {
+        setActionResult("Demo retry: no server deployment was created.");
+        setActionPending(false);
+        return;
+      }
       const result = await redeployRepository(deployment.repositoryId);
       setActionResult(`Retry started as deployment ${result.deploymentId}.`);
     } catch (error) {
@@ -93,6 +99,11 @@ export default function DeploymentDetailScreen() {
     setActionPending(true);
     setActionError(null);
     try {
+      if (isDemoMode) {
+        setActionResult("Demo redeploy: no server deployment was created.");
+        setActionPending(false);
+        return;
+      }
       const result = await redeployRepository(deployment.repositoryId);
       setActionResult(`Redeploy started as deployment ${result.deploymentId}.`);
     } catch (error) {
@@ -108,6 +119,11 @@ export default function DeploymentDetailScreen() {
     setActionPending(true);
     setActionError(null);
     try {
+      if (isDemoMode) {
+        setActionResult("Demo cancel: no server deployment was changed.");
+        setActionPending(false);
+        return;
+      }
       const result = await cancelDeployment(deployment.id);
       setActionResult(`Deployment cancelled with status ${result.status}.`);
     } catch (error) {

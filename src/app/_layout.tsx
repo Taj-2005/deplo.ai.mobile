@@ -12,16 +12,18 @@ import { verifySession } from "@/lib/api";
 import { subscribeToAppResume } from "@/lib/auth-lifecycle";
 import { Pressable, Text, View } from "react-native";
 import { authenticateForAppResume } from "@/lib/biometrics";
+import { isDemoMode } from "@/lib/app-config";
 
 export default function RootLayout() {
   const responseSubscription = useRef<Notifications.EventSubscription | null>(null);
-  const [sessionChecked, setSessionChecked] = useState(false);
+  const [sessionChecked, setSessionChecked] = useState(isDemoMode);
   const [biometricLocked, setBiometricLocked] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     void getSessionToken().then((token) => {
       if (cancelled) return;
+      if (isDemoMode) return;
       if (!token) {
         setSessionChecked(true);
         router.replace("/auth/sign-in");

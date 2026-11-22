@@ -8,6 +8,7 @@ import { StatusPill } from "@/components/status-pill";
 import { useCachedData } from "@/hooks/use-cached-data";
 import { fetchRepositories } from "@/lib/api";
 import type { Repository } from "@/lib/deplo-api";
+import { isDemoMode } from "@/lib/app-config";
 
 const projects = [
   { name: "storefront", owner: "taj-2005/storefront", branch: "main", private: true, status: "Live", tone: "success" as const },
@@ -30,7 +31,17 @@ export default function ProjectsScreen() {
       description: null,
       url: `https://github.com/${project.owner}`,
     })),
-    fetchRepositories,
+    isDemoMode ? async () => projects.map((project, index) => ({
+      id: ["storefront", "payment-api", "deplo-docs"][index],
+      name: project.name,
+      fullName: project.owner,
+      isPrivate: project.private,
+      defaultBranch: project.branch,
+      updatedAt: new Date().toISOString(),
+      language: "TypeScript",
+      description: null,
+      url: `https://github.com/${project.owner}`,
+    })) : fetchRepositories,
   );
   const liveProjects = repositoryState.data ?? [];
   const normalizedProjects = liveProjects.map((project) => ({
@@ -38,8 +49,8 @@ export default function ProjectsScreen() {
     owner: project.fullName,
     branch: project.defaultBranch,
     private: project.isPrivate,
-    status: "Preview",
-    tone: "warning" as const,
+    status: projects.find((fixture) => fixture.name === project.name)?.status ?? "Preview",
+    tone: projects.find((fixture) => fixture.name === project.name)?.tone ?? "warning" as const,
     id: project.id,
   }));
   const filtered = normalizedProjects.filter((project) =>

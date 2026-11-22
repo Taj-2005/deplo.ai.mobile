@@ -5,6 +5,7 @@ import * as Linking from "expo-linking";
 import { FolderGit2 } from "lucide-react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { setSessionToken } from "@/lib/session";
+import { isDemoMode } from "@/lib/app-config";
 import * as WebBrowser from "expo-web-browser";
 import Constants from "expo-constants";
 
@@ -13,6 +14,13 @@ export default function SignInScreen() {
 
   function startGitHubSignIn() {
     setStarting(true);
+    if (isDemoMode) {
+      void setSessionToken("demo-session").finally(() => {
+        setStarting(false);
+        router.replace("/(tabs)");
+      });
+      return;
+    }
     const apiOrigin =
       process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, "") ||
       (typeof Constants.expoConfig?.extra?.apiUrl === "string"

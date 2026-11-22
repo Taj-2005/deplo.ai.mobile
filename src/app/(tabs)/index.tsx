@@ -9,6 +9,9 @@ import { StatusPill } from "@/components/status-pill";
 import { useCachedData } from "@/hooks/use-cached-data";
 import { apiFetch } from "@/lib/api";
 import type { Deployment } from "@/types/deplo";
+import { deployments as fixtureDeployments } from "@/lib/mobile-data";
+import { isDemoMode } from "@/lib/app-config";
+import { DemoBanner } from "@/components/demo-banner";
 
 const recentDeployments = [
   {
@@ -67,7 +70,9 @@ export default function OverviewScreen() {
         requiredEnvVars: [],
       },
     ],
-    () => apiFetch<Deployment[]>("/api/v1/deployments"),
+    isDemoMode
+      ? async () => fixtureDeployments
+      : () => apiFetch<Deployment[]>("/api/v1/deployments"),
   );
 
   async function refresh() {
@@ -90,6 +95,7 @@ export default function OverviewScreen() {
           title="Good morning"
           description="Review system health and respond to deployments."
         />
+        <DemoBanner />
 
         <View className="mx-5 mb-5 border border-green-200 bg-green-50 p-4">
           <View className="flex-row items-center gap-2">

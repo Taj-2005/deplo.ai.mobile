@@ -8,6 +8,7 @@ import { monitoringSnapshots } from "@/lib/monitoring-data";
 import { useCachedData } from "@/hooks/use-cached-data";
 import { fetchProjectMonitoring } from "@/lib/api";
 import type { MonitoringSnapshot, TargetHealth } from "@/types/monitoring";
+import { isDemoMode } from "@/lib/app-config";
 
 function healthTone(health: TargetHealth) {
   if (health === "up") return "bg-green-500";
@@ -34,7 +35,14 @@ export default function MonitoringScreen() {
       downtimeEvents24h: 0,
       updatedAt: "",
     },
-    async () => {
+    isDemoMode ? async () => fallback ?? {
+      projectId: id,
+      frontend: { url: "", health: "unknown", latencyMs: null, lastCheckedAt: "" },
+      backend: { url: "", health: "unknown", latencyMs: null, lastCheckedAt: "" },
+      uptime24h: 0,
+      downtimeEvents24h: 0,
+      updatedAt: "",
+    } : async () => {
       const data = await fetchProjectMonitoring(id);
       return {
         projectId: data.project.id,
