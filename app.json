@@ -11,7 +11,8 @@
       "supportsTablet": true,
       "bundleIdentifier": "ai.deplo.mobile",
       "infoPlist": {
-        "NSFaceIDUsageDescription": "Deplo uses Face ID to protect deployment controls after the app resumes."
+        "NSFaceIDUsageDescription": "Deplo uses Face ID to protect deployment controls after the app resumes.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
