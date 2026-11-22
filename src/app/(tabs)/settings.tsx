@@ -7,6 +7,10 @@ import { router } from "expo-router";
 import { clearSession, getBiometricPreference, setBiometricPreference } from "@/lib/session";
 import { authenticateForAppResume, getBiometricStatus } from "@/lib/biometrics";
 import { registerDeviceForPush } from "@/lib/notifications";
+import {
+  readNotificationPreferences,
+  writeNotificationPreferences,
+} from "@/lib/notification-preferences";
 
 function SettingRow({
   label,
@@ -59,6 +63,9 @@ export default function SettingsScreen() {
 
   useEffect(() => {
     void getBiometricPreference().then(setBiometric);
+    void readNotificationPreferences().then((preferences) =>
+      setNotifications(preferences.enabled),
+    );
   }, []);
 
   async function handleBiometricChange(enabled: boolean) {
@@ -80,6 +87,9 @@ export default function SettingsScreen() {
 
   async function handlePushChange(enabled: boolean) {
     setNotifications(enabled);
+    const preferences = await readNotificationPreferences();
+    preferences.enabled = enabled;
+    await writeNotificationPreferences(preferences);
     if (!enabled) return;
 
     const registration = await registerDeviceForPush();
