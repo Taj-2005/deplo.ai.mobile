@@ -7,9 +7,10 @@ import { MetricCard } from "@/components/metric-card";
 import { ScreenHeader } from "@/components/screen-header";
 import { StatusPill } from "@/components/status-pill";
 import { useCachedData } from "@/hooks/use-cached-data";
-import { apiFetch } from "@/lib/api";
+import { fetchDeployments } from "@/lib/api";
 import type { Deployment } from "@/types/deplo";
 import { deployments as fixtureDeployments } from "@/lib/mobile-data";
+import type { Deployment as ApiDeployment } from "@/lib/deplo-api";
 import { isDemoMode } from "@/lib/app-config";
 import { DemoBanner } from "@/components/demo-banner";
 
@@ -24,54 +25,40 @@ function statusPresentation(status: Deployment["status"]) {
 }
 
 function statusDetail(deployment: Deployment) {
-  if (deployment.status === "FAILED") return deployment.firstError ?? "Deployment failed";
+  if (deployment.status === "FAILED") return "Deployment failed";
   if (deployment.status === "WAITING_FOR_ENV") return "Waiting for required environment variables";
   if (deployment.status === "COMPLETED") return "Deployment completed";
   if (deployment.status === "CANCELLED") return "Deployment was cancelled";
   return `Deploying ${deployment.environment.toLowerCase()}`;
 }
 
+function toMobileDeployment(deployment: ApiDeployment): Deployment {
+  return {
+    id: deployment.id,
+    projectId: deployment.repositoryId,
+    repositoryId: deployment.repositoryId,
+    projectName: deployment.repositoryName,
+    repository: deployment.repositoryFullName,
+    branch: deployment.branch,
+    status: deployment.status,
+    environment: deployment.branch === "main" || deployment.branch === "master" ? "Production" : "Preview",
+    startedAt: deployment.createdAt,
+    durationSeconds: deployment.duration ?? undefined,
+    commit: deployment.updatedAt,
+    frontendUrl: deployment.frontendUrl ?? undefined,
+    backendUrl: deployment.backendUrl ?? undefined,
+    requiredEnvVars: [],
+  };
+}
+
 export default function OverviewScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const overview = useCachedData<Deployment[]>(
-    "deplo.mobile.overview.deployments",
-    [
-      {
-        id: "dep_storefront",
-        projectId: "storefront",
-        repositoryId: "storefront",
-        projectName: "storefront",
-        repository: "taj-2005/storefront",
-        branch: "main",
-        status: "COMPLETED",
-        environment: "Production",
-        startedAt: "2026-11-22T03:42:00+05:30",
-        durationSeconds: 98,
-        commit: "3f8a2c1",
-        frontendUrl: "https://storefront.vercel.app",
-        backendUrl: "https://storefront-api.onrender.com",
-        requiredEnvVars: [],
-      },
-      {
-        id: "dep_api",
-        projectId: "payment-api",
-        repositoryId: "payment-api",
-        projectName: "payment-api",
-        repository: "taj-2005/payment-api",
-        branch: "main",
-        status: "FAILED",
-        environment: "Production",
-        startedAt: "2026-11-22T03:58:00+05:30",
-        durationSeconds: 42,
-        commit: "9e21bc4",
-        backendUrl: "https://payment-api.onrender.com",
-        firstError: "Cannot resolve dependency: @acme/payment-core",
-        requiredEnvVars: [],
-      },
-    ],
+    "deplo.mobile.overview.deployments.v2",
+    isDemoMode ? fixtureDeployments : [],
     isDemoMode
       ? async () => fixtureDeployments
-      : () => apiFetch<Deployment[]>("/api/v1/deployments"),
+      : async () => (await fetchDeployments()).map(toMobileDeployment),
   );
   const deploymentRows = [...(overview.data ?? [])].sort(
     (a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime(),

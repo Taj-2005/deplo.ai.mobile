@@ -9,16 +9,40 @@ import { StatusPill } from "@/components/status-pill";
 import { deploymentLogs, getDeployment } from "@/lib/mobile-data";
 import { redeployRepository, fetchDeployment, cancelDeployment } from "@/lib/api";
 import { useCachedData } from "@/hooks/use-cached-data";
-import type { Deployment } from "@/types/deplo";
+import type { Deployment, LogLine } from "@/types/deplo";
 import { isDemoMode } from "@/lib/app-config";
+
+type DeploymentView = Deployment & { logs: LogLine[] };
+
+function mapLogLines(lines: string[]): LogLine[] {
+  return lines.map((message, index) => {
+    const stage: LogLine["stage"] = /install|dependenc|npm|pnpm|yarn/i.test(message)
+      ? "Install"
+      : /deploy|upload|publish|server/i.test(message)
+        ? "Deploy"
+        : /build|compile|bundle|error|failed/i.test(message)
+          ? "Build"
+          : "Queue";
+    const level: LogLine["level"] = /\b(error|failed|fatal)\b/i.test(message)
+      ? "error"
+      : /\b(warn|warning)\b/i.test(message)
+        ? "warn"
+        : "info";
+    return { id: String(index), timestamp: "", stage, level, message };
+  });
+}
 
 export default function DeploymentDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const fallbackDeployment = getDeployment(id);
-  const deploymentState = useCachedData<Deployment | null>(
-    `deplo.mobile.deployment.${id}`,
-    fallbackDeployment ?? null,
-    isDemoMode ? async () => fallbackDeployment ?? null : async () => {
+  const fallbackDeployment = isDemoMode ? getDeployment(id) : undefined;
+  const deploymentState = useCachedData<DeploymentView | null>(
+    `deplo.mobile.deployment.${id}.v2`,
+    fallbackDeployment
+      ? { ...fallbackDeployment, logs: deploymentLogs[fallbackDeployment.id] ?? [] }
+      : null,
+    isDemoMode ? async () => fallbackDeployment
+      ? { ...fallbackDeployment, logs: deploymentLogs[fallbackDeployment.id] ?? [] }
+      : null : async () => {
       const detail = await fetchDeployment(id);
       return {
         id: detail.id,
@@ -31,11 +55,12 @@ export default function DeploymentDetailScreen() {
         environment: detail.branch === "main" || detail.branch === "master" ? "Production" : "Preview",
         startedAt: detail.createdAt,
         durationSeconds: detail.duration ?? undefined,
-        commit: detail.updatedAt,
+        commit: "",
         frontendUrl: detail.frontendUrl ?? undefined,
         backendUrl: detail.backendUrl ?? undefined,
         firstError: detail.error ?? undefined,
         requiredEnvVars: detail.envVariables.filter((item) => item.isRequired).map((item) => item.key),
+        logs: mapLogLines(detail.logs),
       };
     },
   );
@@ -49,19 +74,25 @@ export default function DeploymentDetailScreen() {
   const [actionPending, setActionPending] = useState(false);
 
   const logs = useMemo(
-    () => (deploymentLogs[deployment?.id ?? ""] ?? []).filter(
+    () => (deployment?.logs ?? []).filter(
       (line) => stage === "All" || line.stage === stage,
     ),
-    [deployment?.id, stage],
+    [deployment?.logs, stage],
   );
 
   if (!deployment) {
     return (
       <SafeAreaView className="flex-1 items-center justify-center bg-[#F6FAFE] px-8">
-        <Text className="text-[16px] font-bold text-deplo-black">Deployment unavailable</Text>
-        <Pressable onPress={() => router.back()} className="mt-4 border border-slate-200 px-4 py-3">
-          <Text className="font-mono text-[12px] text-slate-600">Go back</Text>
-        </Pressable>
+        {deploymentState.loading ? (
+          <Text className="text-[14px] text-slate-600">Loading deployment…</Text>
+        ) : (
+          <>
+            <Text className="text-[16px] font-bold text-deplo-black">Deployment unavailable</Text>
+            <Pressable onPress={() => router.back()} className="mt-4 border border-slate-200 px-4 py-3">
+              <Text className="font-mono text-[12px] text-slate-600">Go back</Text>
+            </Pressable>
+          </>
+        )}
       </SafeAreaView>
     );
   }
@@ -164,7 +195,7 @@ export default function DeploymentDetailScreen() {
             />
           </View>
           <Text className="mt-2 font-mono text-[11px] text-slate-500">
-            {deployment.repository} · {deployment.branch} · {deployment.commit}
+            {deployment.repository} · {deployment.branch}{deployment.commit ? ` · ${deployment.commit}` : ""}
           </Text>
         </View>
 
@@ -336,7 +367,7 @@ export default function DeploymentDetailScreen() {
       <ActionSheet
         visible={redeployVisible}
         title="Redeploy project?"
-        description={`Create a new deployment for ${deployment.repository} at commit ${deployment.commit}. This changes production state.`}
+        description={`Create a new deployment for ${deployment.repository}${deployment.commit ? ` at commit ${deployment.commit}` : ""}. This changes production state.`}
         confirmLabel="Redeploy project"
         destructive
         onCancel={() => setRedeployVisible(false)}

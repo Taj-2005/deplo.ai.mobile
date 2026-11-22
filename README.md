@@ -69,10 +69,11 @@ mobile environment variables.
 
 ## Demo mode
 
-The mobile frontend runs from local fixture data by default:
+The app connects to the Deplo API by default. Enable local fixture data only when
+you intentionally want a demo build:
 
 ```dotenv
-EXPO_PUBLIC_DEMO_MODE=true
+EXPO_PUBLIC_DEMO_MODE=false
 EXPO_PUBLIC_API_URL=https://www.deplo.in
 ```
 
@@ -85,8 +86,8 @@ Demo mode:
   changing a real server deployment
 - Clears OAuth and mutation behavior from the submission demo
 
-Set `EXPO_PUBLIC_DEMO_MODE=false` only after the Deplo backend provides the
-documented mobile authentication and API contracts.
+Set `EXPO_PUBLIC_DEMO_MODE=true` to open the demo without authentication. Demo
+fixtures are never used unless this flag is explicitly enabled.
 
 ## Validation
 

@@ -1,65 +1,99 @@
 import { useState } from "react";
-import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Pressable, RefreshControl, ScrollView, Text, TextInput, View } from "react-native";
 import { router } from "expo-router";
 import { Boxes, FolderGit2, Lock, Search } from "lucide-react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ScreenHeader } from "@/components/screen-header";
 import { StatusPill } from "@/components/status-pill";
 import { useCachedData } from "@/hooks/use-cached-data";
-import { fetchRepositories } from "@/lib/api";
-import type { Repository } from "@/lib/deplo-api";
+import { fetchDeployments, fetchRepositories } from "@/lib/api";
+import type { Deployment, Repository } from "@/lib/deplo-api";
 import { isDemoMode } from "@/lib/app-config";
+import { projects as demoProjects, deployments as demoDeployments } from "@/lib/mobile-data";
 
-const projects = [
-  { name: "storefront", owner: "taj-2005/storefront", branch: "main", private: true, status: "Live", tone: "success" as const },
-  { name: "payment-api", owner: "taj-2005/payment-api", branch: "main", private: true, status: "Failed", tone: "danger" as const },
-  { name: "deplo-docs", owner: "deplolabs/deplo-docs", branch: "docs", private: false, status: "Preview", tone: "warning" as const },
-];
+type ProjectData = { repositories: Repository[]; deployments: Deployment[] };
+
+const demoProjectData: ProjectData = {
+  repositories: demoProjects.map((project) => ({
+    id: project.id,
+    name: project.name,
+    fullName: project.repository,
+    isPrivate: project.private,
+    defaultBranch: project.branch,
+    updatedAt: "",
+    language: null,
+    description: null,
+    url: `https://github.com/${project.repository}`,
+  })),
+  deployments: demoDeployments.map((deployment) => ({
+    id: deployment.id,
+    repositoryId: deployment.repositoryId,
+    repositoryName: deployment.projectName,
+    repositoryFullName: deployment.repository,
+    status: deployment.status,
+    branch: deployment.branch,
+    frontendUrl: deployment.frontendUrl ?? null,
+    backendUrl: deployment.backendUrl ?? null,
+    detectedStack: null,
+    createdAt: deployment.startedAt,
+    updatedAt: deployment.startedAt,
+    duration: deployment.durationSeconds ?? null,
+  })),
+};
+
+function deploymentStatus(deployment?: Deployment) {
+  if (!deployment) return { label: "No deployment", tone: "neutral" as const };
+  if (deployment.status === "COMPLETED") return { label: "Live", tone: "success" as const };
+  if (deployment.status === "FAILED") return { label: "Failed", tone: "danger" as const };
+  if (deployment.status === "CANCELLED") return { label: "Cancelled", tone: "neutral" as const };
+  if (deployment.status === "WAITING_FOR_ENV") return { label: "Needs setup", tone: "warning" as const };
+  return { label: "Deploying", tone: "info" as const };
+}
 
 export default function ProjectsScreen() {
   const [query, setQuery] = useState("");
-  const repositoryState = useCachedData<Repository[]>(
-    "deplo.mobile.projects",
-    projects.map((project, index) => ({
-      id: ["storefront", "payment-api", "deplo-docs"][index],
-      name: project.name,
-      fullName: project.owner,
-      isPrivate: project.private,
-      defaultBranch: project.branch,
-      updatedAt: new Date().toISOString(),
-      language: "TypeScript",
-      description: null,
-      url: `https://github.com/${project.owner}`,
-    })),
-    isDemoMode ? async () => projects.map((project, index) => ({
-      id: ["storefront", "payment-api", "deplo-docs"][index],
-      name: project.name,
-      fullName: project.owner,
-      isPrivate: project.private,
-      defaultBranch: project.branch,
-      updatedAt: new Date().toISOString(),
-      language: "TypeScript",
-      description: null,
-      url: `https://github.com/${project.owner}`,
-    })) : fetchRepositories,
+  const [refreshing, setRefreshing] = useState(false);
+  const projectState = useCachedData<ProjectData>(
+    "deplo.mobile.projects-and-deployments",
+    isDemoMode ? demoProjectData : { repositories: [], deployments: [] },
+    async () => {
+      if (isDemoMode) return demoProjectData;
+      const [repositories, deployments] = await Promise.all([fetchRepositories(), fetchDeployments()]);
+      return { repositories, deployments };
+    },
   );
-  const liveProjects = repositoryState.data ?? [];
-  const normalizedProjects = liveProjects.map((project) => ({
-    name: project.name,
-    owner: project.fullName,
-    branch: project.defaultBranch,
-    private: project.isPrivate,
-    status: projects.find((fixture) => fixture.name === project.name)?.status ?? "Preview",
-    tone: projects.find((fixture) => fixture.name === project.name)?.tone ?? "warning" as const,
-    id: project.id,
-  }));
+  const normalizedProjects = (projectState.data?.repositories ?? []).map((project) => {
+    const latestDeployment = (projectState.data?.deployments ?? [])
+      .filter((deployment) => deployment.repositoryId === project.id)
+      .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))[0];
+    const status = deploymentStatus(latestDeployment);
+    return {
+      name: project.name,
+      owner: project.fullName,
+      branch: project.defaultBranch,
+      private: project.isPrivate,
+      status: status.label,
+      tone: status.tone,
+      id: project.id,
+    };
+  });
   const filtered = normalizedProjects.filter((project) =>
     `${project.name} ${project.owner}`.toLowerCase().includes(query.toLowerCase()),
   );
 
+  async function refresh() {
+    setRefreshing(true);
+    await projectState.refresh();
+    setRefreshing(false);
+  }
+
   return (
     <SafeAreaView className="flex-1 bg-[#F6FAFE]" edges={["top"]}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 28 }} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor="#0A0A0A" />}
+        contentContainerStyle={{ paddingBottom: 28 }}
+        showsVerticalScrollIndicator={false}
+      >
         <ScreenHeader
           eyebrow="Workspace"
           title="Projects"
@@ -107,9 +141,15 @@ export default function ProjectsScreen() {
 
           {filtered.length === 0 ? (
             <View className="items-center px-5 py-10">
-              <Text className="text-[14px] font-bold text-deplo-black">No projects match</Text>
+              <Text className="text-[14px] font-bold text-deplo-black">
+                {projectState.loading ? "Loading repositories…" : projectState.unavailable ? "Projects could not be loaded" : "No projects match"}
+              </Text>
               <Text className="mt-1 text-center text-[12px] text-slate-500">
-                Try another repository name or clear the search.
+                {projectState.loading
+                  ? "Fetching repositories and deployment status from Deplo."
+                  : projectState.unavailable
+                    ? projectState.error ?? "Pull to refresh and try again."
+                    : "Try another repository name or clear the search."}
               </Text>
             </View>
           ) : null}

@@ -9,32 +9,44 @@ import { isDemoMode } from "@/lib/app-config";
 
 export default function DeploymentEnvironmentScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const deployment = getDeployment(id);
-  const [values, setValues] = useState<Record<string, string>>({
-    DATABASE_URL: "",
-    JWT_SECRET: "",
-  });
+  const [requiredKeys, setRequiredKeys] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [values, setValues] = useState<Record<string, string>>({});
   const [revealed, setRevealed] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
+    let cancelled = false;
     const timer = setTimeout(() => {
-      void fetchDeployment(id).then((detail) => {
-        setValues(
-          Object.fromEntries(
-            detail.envVariables
+      const load = async () => {
+        try {
+          const keys = isDemoMode
+            ? getDeployment(id)?.requiredEnvVars ?? []
+            : (await fetchDeployment(id)).envVariables
               .filter((item) => item.isRequired)
-              .map((item) => [item.key, ""]),
-          ),
-        );
-      }).catch(() => undefined);
+              .map((item) => item.key);
+          if (cancelled) return;
+          setRequiredKeys(keys);
+          setValues(Object.fromEntries(keys.map((key) => [key, ""])));
+          setLoadError(null);
+        } catch (error) {
+          if (!cancelled) setLoadError(error instanceof Error ? error.message : "Deployment details could not be loaded.");
+        } finally {
+          if (!cancelled) setLoading(false);
+        }
+      };
+      void load();
     }, 0);
-    return () => clearTimeout(timer);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   }, [id]);
 
-  if (!deployment) {
+  if (loading) {
     return (
       <SafeAreaView className="flex-1 items-center justify-center bg-[#F6FAFE] px-8">
-        <Text className="text-[16px] font-bold text-deplo-black">Deployment unavailable</Text>
+        <Text className="text-[14px] text-slate-600">Loading required environment keys…</Text>
       </SafeAreaView>
     );
   }
@@ -68,6 +80,12 @@ export default function DeploymentEnvironmentScreen() {
             to Deplo and are never retained in the mobile preference cache.
           </Text>
         </View>
+
+        {loadError ? (
+          <View className="mx-5 mb-4 border border-red-200 bg-red-50 p-4">
+            <Text className="text-[12px] leading-5 text-red-800">{loadError}</Text>
+          </View>
+        ) : null}
 
         <View className="mx-5 border border-slate-200 bg-white">
           {Object.keys(values).map((key, index) => (
@@ -105,10 +123,16 @@ export default function DeploymentEnvironmentScreen() {
               </View>
             </View>
           ))}
+          {requiredKeys.length === 0 ? (
+            <View className="p-4">
+              <Text className="text-[13px] text-slate-600">No required environment keys were returned for this deployment.</Text>
+            </View>
+          ) : null}
         </View>
 
         <Pressable
           accessibilityRole="button"
+          disabled={!!loadError || requiredKeys.length === 0}
           onPress={async () => {
             const missing = Object.entries(values).filter(([, value]) => !value.trim());
             if (missing.length) {
@@ -137,7 +161,7 @@ export default function DeploymentEnvironmentScreen() {
           className="mx-5 mt-5 items-center border border-deplo-black bg-deplo-black px-4 py-4"
         >
           <Text className="font-mono text-[13px] font-bold text-white">
-            Continue deployment
+            {requiredKeys.length === 0 ? "No required values" : "Continue deployment"}
           </Text>
         </Pressable>
       </ScrollView>

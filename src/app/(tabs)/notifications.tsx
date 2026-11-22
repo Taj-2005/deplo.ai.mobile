@@ -68,8 +68,8 @@ function formatNotificationTime(value: string) {
 export default function NotificationsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const state = useCachedData<MobileNotification[]>(
-    "deplo.mobile.notifications.history",
-    demoNotifications,
+    "deplo.mobile.notifications.history.v2",
+    isDemoMode ? demoNotifications : [],
     isDemoMode ? async () => demoNotifications : fetchMobileNotifications,
   );
   const notifications = state.data ?? [];

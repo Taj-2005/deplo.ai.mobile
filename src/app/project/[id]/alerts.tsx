@@ -9,6 +9,8 @@ import {
 } from "@/lib/notification-preferences";
 import { getProject } from "@/lib/mobile-data";
 import type { NotificationCategory } from "@/types/notifications";
+import { fetchRepositories } from "@/lib/api";
+import { isDemoMode } from "@/lib/app-config";
 
 const categoryLabels: {
   category: NotificationCategory;
@@ -44,7 +46,7 @@ const categoryLabels: {
 
 export default function ProjectAlertPreferencesScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const project = getProject(id);
+  const [projectName, setProjectName] = useState(isDemoMode ? getProject(id)?.name ?? "Project" : "Project");
   const [categories, setCategories] = useState<Record<NotificationCategory, boolean>>({
     "deployment-success": true,
     "deployment-failed": true,
@@ -55,6 +57,12 @@ export default function ProjectAlertPreferencesScreen() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
+      if (!isDemoMode) {
+        void fetchRepositories().then((repositories) => {
+          const repository = repositories.find((item) => item.id === id);
+          if (repository) setProjectName(repository.name);
+        }).catch(() => undefined);
+      }
       void loadNotificationPreferences().then((preferences) => {
         const overrides = preferences.projectOverrides[id] ?? {};
         setCategories({
@@ -98,7 +106,7 @@ export default function ProjectAlertPreferencesScreen() {
                 Project alerts
               </Text>
               <Text className="mt-1 text-[22px] font-bold tracking-tight text-deplo-black">
-                {project?.name ?? "Project"}
+                {projectName}
               </Text>
             </View>
           </View>

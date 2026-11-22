@@ -24,23 +24,23 @@ function healthLabel(health: TargetHealth) {
 
 export default function MonitoringScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const fallback = monitoringSnapshots[id] as MonitoringSnapshot | undefined;
+  const fallback = isDemoMode ? monitoringSnapshots[id] as MonitoringSnapshot | undefined : undefined;
   const monitoringState = useCachedData<MonitoringSnapshot>(
-    `deplo.mobile.monitoring.${id}`,
+    `deplo.mobile.monitoring.${id}.v2`,
     fallback ?? {
       projectId: id,
       frontend: { url: "", health: "unknown", latencyMs: null, lastCheckedAt: "" },
       backend: { url: "", health: "unknown", latencyMs: null, lastCheckedAt: "" },
-      uptime24h: 0,
-      downtimeEvents24h: 0,
+      uptime24h: null,
+      downtimeEvents24h: null,
       updatedAt: "",
     },
     isDemoMode ? async () => fallback ?? {
       projectId: id,
       frontend: { url: "", health: "unknown", latencyMs: null, lastCheckedAt: "" },
       backend: { url: "", health: "unknown", latencyMs: null, lastCheckedAt: "" },
-      uptime24h: 0,
-      downtimeEvents24h: 0,
+      uptime24h: null,
+      downtimeEvents24h: null,
       updatedAt: "",
     } : async () => {
       const data = await fetchProjectMonitoring(id);
@@ -58,8 +58,9 @@ export default function MonitoringScreen() {
           latencyMs: data.backend.current?.latencyMs ?? null,
           lastCheckedAt: data.backend.current?.checkedAt ?? "",
         },
-        uptime24h: data.frontend.uptime24h ?? data.backend.uptime24h ?? 0,
-        downtimeEvents24h: 0,
+        uptime24h: data.frontend.uptime24h ?? data.backend.uptime24h,
+        downtimeEvents24h: [...data.frontend.series, ...data.backend.series]
+          .filter((sample) => !sample.ok).length,
         updatedAt: new Date().toISOString(),
       };
     },
@@ -171,7 +172,9 @@ export default function MonitoringScreen() {
                 </View>
                 <View>
                   <Text className="font-mono text-[9px] uppercase text-slate-400">Checked</Text>
-                  <Text className="mt-1 font-mono text-[12px] text-deplo-black">Recently</Text>
+                  <Text className="mt-1 font-mono text-[12px] text-deplo-black">
+                    {target.lastCheckedAt ? new Date(target.lastCheckedAt).toLocaleTimeString() : "Unavailable"}
+                  </Text>
                 </View>
               </View>
             </View>
@@ -182,13 +185,13 @@ export default function MonitoringScreen() {
           <View className="flex-1 border border-slate-200 bg-white p-4">
             <Text className="font-mono text-[10px] uppercase text-slate-500">24h uptime</Text>
             <Text className="mt-2 text-[24px] font-bold text-deplo-black">
-              {snapshot.uptime24h.toFixed(2)}%
+              {snapshot.uptime24h === null ? "—" : `${snapshot.uptime24h.toFixed(2)}%`}
             </Text>
           </View>
           <View className="flex-1 border border-slate-200 bg-white p-4">
             <Text className="font-mono text-[10px] uppercase text-slate-500">Downtime</Text>
             <Text className="mt-2 text-[24px] font-bold text-deplo-black">
-              {snapshot.downtimeEvents24h}
+              {snapshot.downtimeEvents24h === null ? "—" : snapshot.downtimeEvents24h}
             </Text>
             <Text className="mt-1 text-[10px] text-slate-500">events / 24h</Text>
           </View>

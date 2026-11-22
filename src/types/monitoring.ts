@@ -11,7 +11,7 @@ export interface MonitoringSnapshot {
   projectId: string;
   frontend: HealthTarget;
   backend: HealthTarget;
-  uptime24h: number;
-  downtimeEvents24h: number;
+  uptime24h: number | null;
+  downtimeEvents24h: number | null;
   updatedAt: string;
 }

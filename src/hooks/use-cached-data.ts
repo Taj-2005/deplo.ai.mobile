@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { DataState } from "@/types/cache";
 import { readCache, writeCache } from "@/lib/cache";
 import { getConnectivity } from "@/lib/connectivity";
@@ -8,6 +8,8 @@ export function useCachedData<T>(
   fallback: T,
   loader: () => Promise<T>,
 ) {
+  const optionsRef = useRef({ fallback, loader });
+  optionsRef.current = { fallback, loader };
   const [state, setState] = useState<DataState<T>>({
     data: fallback,
     updatedAt: null,
@@ -18,6 +20,7 @@ export function useCachedData<T>(
   });
 
   const refresh = useCallback(async () => {
+    const { fallback: currentFallback, loader: currentLoader } = optionsRef.current;
     setState((current) => ({ ...current, loading: true, error: null }));
 
     const [cached, connectivity] = await Promise.all([
@@ -38,7 +41,7 @@ export function useCachedData<T>(
 
     if (!connectivity.connected || connectivity.internetReachable === false) {
       setState({
-        data: cached?.value ?? fallback,
+        data: cached?.value ?? currentFallback,
         updatedAt: cached?.updatedAt ?? null,
         loading: false,
         stale: true,
@@ -49,7 +52,7 @@ export function useCachedData<T>(
     }
 
     try {
-      const value = await loader();
+      const value = await currentLoader();
       await writeCache(key, value);
       setState({
         data: value,
@@ -61,7 +64,7 @@ export function useCachedData<T>(
       });
     } catch (error) {
       setState({
-        data: cached?.value ?? fallback,
+        data: cached?.value ?? currentFallback,
         updatedAt: cached?.updatedAt ?? null,
         loading: false,
         stale: true,
@@ -69,7 +72,7 @@ export function useCachedData<T>(
         error: error instanceof Error ? error.message : "Unable to reach Deplo.",
       });
     }
-  }, [fallback, key, loader]);
+  }, [key]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
