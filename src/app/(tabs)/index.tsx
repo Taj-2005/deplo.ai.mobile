@@ -13,24 +13,23 @@ import { deployments as fixtureDeployments } from "@/lib/mobile-data";
 import { isDemoMode } from "@/lib/app-config";
 import { DemoBanner } from "@/components/demo-banner";
 
-const recentDeployments = [
-  {
-    id: "dep_storefront",
-    name: "storefront",
-    branch: "main",
-    status: "Live",
-    tone: "success" as const,
-    detail: "Frontend and backend healthy",
-  },
-  {
-    id: "dep_api",
-    name: "payment-api",
-    branch: "main",
-    status: "Failed",
-    tone: "danger" as const,
-    detail: "Build failed in dependency install",
-  },
-];
+const activeStatuses = new Set(["PENDING", "ANALYZING", "DEPLOYING_BACKEND", "BACKEND_READY", "DEPLOYING_FRONTEND"]);
+
+function statusPresentation(status: Deployment["status"]) {
+  if (status === "COMPLETED") return { label: "Succeeded", tone: "success" as const };
+  if (status === "FAILED") return { label: "Failed", tone: "danger" as const };
+  if (status === "WAITING_FOR_ENV") return { label: "Needs environment", tone: "warning" as const };
+  if (status === "CANCELLED") return { label: "Cancelled", tone: "neutral" as const };
+  return { label: "In progress", tone: "info" as const };
+}
+
+function statusDetail(deployment: Deployment) {
+  if (deployment.status === "FAILED") return deployment.firstError ?? "Deployment failed";
+  if (deployment.status === "WAITING_FOR_ENV") return "Waiting for required environment variables";
+  if (deployment.status === "COMPLETED") return "Deployment completed";
+  if (deployment.status === "CANCELLED") return "Deployment was cancelled";
+  return `Deploying ${deployment.environment.toLowerCase()}`;
+}
 
 export default function OverviewScreen() {
   const [refreshing, setRefreshing] = useState(false);
@@ -74,6 +73,17 @@ export default function OverviewScreen() {
       ? async () => fixtureDeployments
       : () => apiFetch<Deployment[]>("/api/v1/deployments"),
   );
+  const deploymentRows = [...(overview.data ?? [])].sort(
+    (a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime(),
+  );
+  const attentionCount = deploymentRows.filter((deployment) =>
+    deployment.status === "FAILED" || deployment.status === "WAITING_FOR_ENV",
+  ).length;
+  const activeCount = deploymentRows.filter((deployment) => activeStatuses.has(deployment.status)).length;
+  const completedCount = deploymentRows.filter((deployment) => deployment.status === "COMPLETED").length;
+  const hasAttention = attentionCount > 0;
+  const hasData = deploymentRows.length > 0;
+  const bannerTone = hasAttention ? "danger" : hasData ? "success" : "neutral";
 
   async function refresh() {
     setRefreshing(true);
@@ -91,52 +101,62 @@ export default function OverviewScreen() {
         showsVerticalScrollIndicator={false}
       >
         <ScreenHeader
-          eyebrow="Workspace / 22 Nov"
-          title="Good morning"
-          description="Review system health and respond to deployments."
+          eyebrow="Workspace / Deployment overview"
+          title="Deployment health"
+          description="Recent deployment status from your Deplo workspace."
         />
         <DemoBanner />
 
-        <View className="mx-5 mb-5 border border-green-200 bg-green-50 p-4">
+        <View className={`mx-5 mb-5 border p-4 ${bannerTone === "danger" ? "border-red-200 bg-red-50" : bannerTone === "success" ? "border-green-200 bg-green-50" : "border-slate-200 bg-slate-50"}`}>
           <View className="flex-row items-center gap-2">
-            <CheckCircle2 size={18} strokeWidth={1.8} className="text-green-700" />
-            <Text className="text-[14px] font-bold text-green-800">Systems operational</Text>
+            {hasAttention ? (
+              <AlertTriangle size={18} strokeWidth={1.8} className="text-red-700" />
+            ) : hasData ? (
+              <CheckCircle2 size={18} strokeWidth={1.8} className="text-green-700" />
+            ) : (
+              <Activity size={18} strokeWidth={1.8} className="text-slate-600" />
+            )}
+            <Text className={`text-[14px] font-bold ${bannerTone === "danger" ? "text-red-800" : bannerTone === "success" ? "text-green-800" : "text-slate-700"}`}>
+              {!hasData ? "No deployment data available" : overview.unavailable ? "Showing cached deployment status" : hasAttention ? `${attentionCount} deployment${attentionCount === 1 ? "" : "s"} need attention` : "No recent deployment issues"}
+            </Text>
           </View>
-          <Text className="mt-1.5 text-[12px] leading-5 text-green-700">
-            3 production targets are responding within their current health window.
+          <Text className={`mt-1.5 text-[12px] leading-5 ${bannerTone === "danger" ? "text-red-700" : bannerTone === "success" ? "text-green-700" : "text-slate-600"}`}>
+            {!hasData ? "Pull to refresh when deployment data is available." : overview.stale ? "This is the last available deployment data; refresh when connected." : "This summary reflects the deployments currently available in the workspace."}
           </Text>
         </View>
 
         <View className="mx-5 flex-row gap-3">
           <MetricCard
-            label="Live"
-            value="6"
-            detail="Across 4 projects"
+            label="Success"
+            value={String(completedCount)}
+            detail="Completed in this list"
             icon={Cloud}
             tone="success"
           />
           <MetricCard
             label="Attention"
-            value="1"
-            detail="Requires action"
+            value={String(attentionCount)}
+            detail="Failed or waiting for setup"
             icon={AlertTriangle}
             tone="danger"
           />
         </View>
 
         <View className="mx-5 mt-5 flex-row gap-3">
-          <MetricCard label="Active" value="2" detail="Deployments running" icon={Activity} />
-          <MetricCard label="Success" value="94%" detail="Last 30 days" icon={Server} />
+          <MetricCard label="Active" value={String(activeCount)} detail="Deployments running" icon={Activity} />
+          <MetricCard label="Loaded" value={String(deploymentRows.length)} detail="Recent deployments" icon={Server} />
         </View>
 
         <View className="mx-5 mt-7">
           <View className="mb-3 flex-row items-center justify-between">
             <Text className="text-[15px] font-bold text-deplo-black">Recent deployments</Text>
-            <Text className="font-mono text-[11px] text-slate-500">View all</Text>
+            <Text className="font-mono text-[11px] text-slate-500">{deploymentRows.length} total</Text>
           </View>
 
           <View className="border border-slate-200 bg-white">
-            {recentDeployments.map((deployment, index) => (
+            {deploymentRows.slice(0, 5).map((deployment, index) => {
+              const presentation = statusPresentation(deployment.status);
+              return (
               <Pressable
                 key={deployment.id}
                 accessibilityRole="button"
@@ -146,17 +166,22 @@ export default function OverviewScreen() {
                 <View className="flex-row items-start justify-between gap-3">
                   <View className="flex-1">
                     <Text className="text-[14px] font-bold text-deplo-black">
-                      {deployment.name}
+                      {deployment.projectName}
                     </Text>
                     <Text className="mt-1 font-mono text-[11px] text-slate-500">
                       {deployment.branch} · {deployment.id}
                     </Text>
                   </View>
-                  <StatusPill label={deployment.status} tone={deployment.tone} />
+                  <StatusPill label={presentation.label} tone={presentation.tone} />
                 </View>
-                <Text className="mt-3 text-[12px] text-slate-500">{deployment.detail}</Text>
+                <Text numberOfLines={2} className="mt-3 text-[12px] text-slate-500">{statusDetail(deployment)}</Text>
               </Pressable>
-            ))}
+            );})}
+            {deploymentRows.length === 0 ? (
+              <View className="p-4">
+                <Text className="text-[13px] text-slate-500">No deployment data is available yet.</Text>
+              </View>
+            ) : null}
           </View>
         </View>
 
