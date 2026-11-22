@@ -37,8 +37,18 @@
           "color": "#0A0A0A"
         }
       ],
-      "expo-web-browser",
       "expo-web-browser"
-    ]
+    ],
+    "extra": {
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      },
+      "eas": {
+        "projectId": "2caec173-c709-4f4c-b7f7-c30837ce7c72"
+      }
+    },
+    "owner": "taj-786"
   }
 }
