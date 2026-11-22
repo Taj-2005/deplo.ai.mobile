@@ -1,7 +1,7 @@
 import type { NotificationCategory } from "@/types/notifications";
 
 export interface NotificationRouteData {
-  route?: "deployment" | "project" | "monitoring" | "overview";
+  route?: "deployment" | "project" | "monitoring" | "environment" | "overview";
   deploymentId?: string;
   projectId?: string;
   category?: NotificationCategory;
@@ -10,6 +10,9 @@ export interface NotificationRouteData {
 export function getNotificationRoute(data: NotificationRouteData): string {
   if (data.route === "deployment" && data.deploymentId) {
     return `/deployments/${data.deploymentId}`;
+  }
+  if (data.route === "environment" && data.deploymentId) {
+    return `/deployment-env/${data.deploymentId}`;
   }
   if (data.route === "project" && data.projectId) {
     return `/project/${data.projectId}`;

@@ -11,6 +11,8 @@ import {
   readNotificationPreferences,
   writeNotificationPreferences,
 } from "@/lib/notification-preferences";
+import { clearDeviceIdentity, getOrCreateDeviceId } from "@/lib/device";
+import { revokeMobileDevice } from "@/lib/api";
 
 function SettingRow({
   label,
@@ -108,7 +110,14 @@ export default function SettingsScreen() {
         text: "Sign out",
         style: "destructive",
         onPress: () => {
-          void clearSession().finally(() => router.replace("/auth/sign-in"));
+          void getOrCreateDeviceId()
+            .then((deviceId) => revokeMobileDevice(deviceId))
+            .catch(() => undefined)
+            .finally(async () => {
+              await clearDeviceIdentity();
+              await clearSession();
+              router.replace("/auth/sign-in");
+            });
         },
       },
     ]);

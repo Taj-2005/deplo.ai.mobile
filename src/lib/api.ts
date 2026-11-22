@@ -53,3 +53,30 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
   if (response.status === 204) return undefined as T;
   return response.json() as Promise<T>;
 }
+
+export async function retryDeployment(deploymentId: string): Promise<{ deploymentId: string }> {
+  return apiFetch<{ deploymentId: string }>(
+    `/api/v1/deployments/${deploymentId}/retry`,
+    { method: "POST" },
+  );
+}
+
+export async function redeployProject(
+  projectId: string,
+  commit: string,
+): Promise<{ deploymentId: string }> {
+  return apiFetch<{ deploymentId: string }>(
+    `/api/v1/deployments`,
+    {
+      method: "POST",
+      body: JSON.stringify({ projectId, commit }),
+    },
+  );
+}
+
+export async function revokeMobileDevice(deviceId: string): Promise<void> {
+  await apiFetch<void>(
+    `/api/v1/mobile/devices/${encodeURIComponent(deviceId)}`,
+    { method: "DELETE" },
+  );
+}

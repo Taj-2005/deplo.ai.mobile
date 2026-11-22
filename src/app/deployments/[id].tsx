@@ -1,11 +1,13 @@
 import { useMemo, useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, Text, View } from "react-native";
+import * as Clipboard from "expo-clipboard";
 import { router, useLocalSearchParams } from "expo-router";
 import { AlertTriangle, ArrowLeft, Copy, ExternalLink, RefreshCw, RotateCcw } from "lucide-react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ActionSheet } from "@/components/action-sheet";
 import { StatusPill } from "@/components/status-pill";
 import { deploymentLogs, getDeployment } from "@/lib/mobile-data";
+import { redeployProject, retryDeployment } from "@/lib/api";
 
 export default function DeploymentDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -14,6 +16,8 @@ export default function DeploymentDetailScreen() {
   const [retryVisible, setRetryVisible] = useState(false);
   const [redeployVisible, setRedeployVisible] = useState(false);
   const [actionResult, setActionResult] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [actionPending, setActionPending] = useState(false);
 
   const logs = useMemo(
     () => (deploymentLogs[deployment?.id ?? ""] ?? []).filter(
@@ -40,15 +44,41 @@ export default function DeploymentDetailScreen() {
         ? "danger"
         : "warning";
 
-  function confirmRetry() {
+  async function confirmRetry() {
+    if (!deployment || actionPending) return;
     setRetryVisible(false);
-    setActionResult("Retry requested. Deployment status will refresh automatically.");
+    setActionPending(true);
+    setActionError(null);
+    try {
+      const result = await retryDeployment(deployment.id);
+      setActionResult(`Retry started as deployment ${result.deploymentId}.`);
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : "The retry could not be started.");
+    } finally {
+      setActionPending(false);
+    }
   }
 
-  function confirmRedeploy() {
+  async function confirmRedeploy() {
     if (!deployment) return;
     setRedeployVisible(false);
-    setActionResult("Redeploy requested for commit " + deployment.commit + ".");
+    setActionPending(true);
+    setActionError(null);
+    try {
+      const result = await redeployProject(deployment.projectId, deployment.commit);
+      setActionResult(`Redeploy started as deployment ${result.deploymentId}.`);
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : "The redeploy could not be started.");
+    } finally {
+      setActionPending(false);
+    }
+  }
+
+  async function copyBuildLog() {
+    await Clipboard.setStringAsync(logs.map((line) =>
+      `${line.timestamp} [${line.stage}] ${line.message}`,
+    ).join("\n"));
+    Alert.alert("Copied", "The filtered build log is on the clipboard.");
   }
 
   return (
@@ -91,9 +121,30 @@ export default function DeploymentDetailScreen() {
           </View>
         ) : null}
 
+        {deployment.requiredEnvVars.length > 0 ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.push(`/deployment-env/${deployment.id}`)}
+            className="mx-5 mb-5 border border-amber-200 bg-amber-50 p-4"
+          >
+            <Text className="text-[13px] font-bold text-amber-800">
+              Environment values required
+            </Text>
+            <Text className="mt-1 text-[12px] leading-5 text-amber-700">
+              Review and provide {deployment.requiredEnvVars.length} required value(s).
+            </Text>
+          </Pressable>
+        ) : null}
+
         {actionResult ? (
           <View className="mx-5 mb-5 border border-green-200 bg-green-50 p-4">
             <Text className="text-[12px] leading-5 text-green-800">{actionResult}</Text>
+          </View>
+        ) : null}
+
+        {actionError ? (
+          <View className="mx-5 mb-5 border border-red-200 bg-red-50 p-4">
+            <Text className="text-[12px] leading-5 text-red-800">{actionError}</Text>
           </View>
         ) : null}
 
@@ -138,7 +189,11 @@ export default function DeploymentDetailScreen() {
         <View className="mx-5 mt-7">
           <View className="mb-3 flex-row items-center justify-between">
             <Text className="text-[15px] font-bold text-deplo-black">Build log</Text>
-            <Pressable accessibilityRole="button" className="flex-row items-center gap-1">
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => void copyBuildLog()}
+              className="flex-row items-center gap-1"
+            >
               <Copy size={12} strokeWidth={1.7} className="text-slate-500" />
               <Text className="font-mono text-[11px] text-slate-500">Copy</Text>
             </Pressable>

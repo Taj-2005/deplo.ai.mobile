@@ -1,0 +1,115 @@
+import { useState } from "react";
+import { Alert, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { router, useLocalSearchParams } from "expo-router";
+import { ArrowLeft, Eye, EyeOff, KeyRound } from "lucide-react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { getDeployment } from "@/lib/mobile-data";
+
+export default function DeploymentEnvironmentScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const deployment = getDeployment(id);
+  const [values, setValues] = useState<Record<string, string>>({
+    DATABASE_URL: "",
+    JWT_SECRET: "",
+  });
+  const [revealed, setRevealed] = useState<Record<string, boolean>>({});
+
+  if (!deployment) {
+    return (
+      <SafeAreaView className="flex-1 items-center justify-center bg-[#F6FAFE] px-8">
+        <Text className="text-[16px] font-bold text-deplo-black">Deployment unavailable</Text>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView className="flex-1 bg-[#F6FAFE]" edges={["top"]}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
+        <View className="px-5 pb-5 pt-3">
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.back()}
+            className="mb-5 h-9 w-9 items-center justify-center border border-slate-200 bg-white"
+          >
+            <ArrowLeft size={17} strokeWidth={1.8} className="text-slate-600" />
+          </Pressable>
+          <View className="flex-row items-center gap-3">
+            <View className="h-10 w-10 items-center justify-center border border-amber-200 bg-amber-50">
+              <KeyRound size={17} strokeWidth={1.8} className="text-amber-700" />
+            </View>
+            <View className="flex-1">
+              <Text className="font-mono text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                Deployment paused
+              </Text>
+              <Text className="mt-1 text-[24px] font-bold tracking-tight text-deplo-black">
+                Environment values
+              </Text>
+            </View>
+          </View>
+          <Text className="mt-3 text-[13px] leading-5 text-slate-600">
+            Provide required values before this deployment can continue. Values are sent securely
+            to Deplo and are never retained in the mobile preference cache.
+          </Text>
+        </View>
+
+        <View className="mx-5 border border-slate-200 bg-white">
+          {Object.keys(values).map((key, index) => (
+            <View
+              key={key}
+              className={`p-4 ${index > 0 ? "border-t border-slate-200" : ""}`}
+            >
+              <Text className="mb-2 font-mono text-[11px] font-bold text-deplo-black">
+                {key}
+                <Text className="text-red-600"> required</Text>
+              </Text>
+              <View className="flex-row items-center border border-slate-200 bg-slate-50">
+                <TextInput
+                  value={values[key]}
+                  onChangeText={(value) => setValues((current) => ({ ...current, [key]: value }))}
+                  secureTextEntry={!revealed[key]}
+                  placeholder="Enter value"
+                  placeholderTextColor="#94A3B8"
+                  className="flex-1 px-3 py-3 font-mono text-[12px] text-deplo-black"
+                />
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => setRevealed((current) => ({
+                    ...current,
+                    [key]: !current[key],
+                  }))}
+                  className="px-3"
+                >
+                  {revealed[key] ? (
+                    <EyeOff size={15} strokeWidth={1.7} className="text-slate-500" />
+                  ) : (
+                    <Eye size={15} strokeWidth={1.7} className="text-slate-500" />
+                  )}
+                </Pressable>
+              </View>
+            </View>
+          ))}
+        </View>
+
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => {
+            const missing = Object.entries(values).filter(([, value]) => !value.trim());
+            if (missing.length) {
+              Alert.alert("Required values missing", "Complete all required environment fields.");
+              return;
+            }
+            Alert.alert(
+              "Secure submission",
+              "Environment values require the matching production API endpoint before they can be submitted.",
+            );
+          }}
+          className="mx-5 mt-5 items-center border border-deplo-black bg-deplo-black px-4 py-4"
+        >
+          <Text className="font-mono text-[13px] font-bold text-white">
+            Continue deployment
+          </Text>
+        </Pressable>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
