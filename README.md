@@ -67,6 +67,27 @@ Values prefixed with `EXPO_PUBLIC_` are included in the client bundle; provider
 credentials, provider API keys, and deployment secrets must never be placed in
 mobile environment variables.
 
+## Demo mode
+
+The mobile frontend runs from local fixture data by default:
+
+```dotenv
+EXPO_PUBLIC_DEMO_MODE=true
+EXPO_PUBLIC_API_URL=https://www.deplo.in
+```
+
+Demo mode:
+
+- Opens directly into the mobile interface
+- Uses local projects, deployments, logs, monitoring, and alert fixtures
+- Displays a visible demo banner
+- Prevents OAuth, retry, redeploy, cancel, and environment submissions from
+  changing a real server deployment
+- Clears OAuth and mutation behavior from the submission demo
+
+Set `EXPO_PUBLIC_DEMO_MODE=false` only after the Deplo backend provides the
+documented mobile authentication and API contracts.
+
 ## Validation
 
 ```bash
