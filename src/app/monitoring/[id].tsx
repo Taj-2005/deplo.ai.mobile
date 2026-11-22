@@ -5,7 +5,9 @@ import { ArrowLeft, ExternalLink, Globe, RefreshCw, Server } from "lucide-react-
 import { SafeAreaView } from "react-native-safe-area-context";
 import { getConnectivity } from "@/lib/connectivity";
 import { monitoringSnapshots } from "@/lib/monitoring-data";
-import type { TargetHealth } from "@/types/monitoring";
+import { useCachedData } from "@/hooks/use-cached-data";
+import { fetchProjectMonitoring } from "@/lib/api";
+import type { MonitoringSnapshot, TargetHealth } from "@/types/monitoring";
 
 function healthTone(health: TargetHealth) {
   if (health === "up") return "bg-green-500";
@@ -21,7 +23,40 @@ function healthLabel(health: TargetHealth) {
 
 export default function MonitoringScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const snapshot = monitoringSnapshots[id];
+  const fallback = monitoringSnapshots[id] as MonitoringSnapshot | undefined;
+  const monitoringState = useCachedData<MonitoringSnapshot>(
+    `deplo.mobile.monitoring.${id}`,
+    fallback ?? {
+      projectId: id,
+      frontend: { url: "", health: "unknown", latencyMs: null, lastCheckedAt: "" },
+      backend: { url: "", health: "unknown", latencyMs: null, lastCheckedAt: "" },
+      uptime24h: 0,
+      downtimeEvents24h: 0,
+      updatedAt: "",
+    },
+    async () => {
+      const data = await fetchProjectMonitoring(id);
+      return {
+        projectId: data.project.id,
+        frontend: {
+          url: data.frontend.url ?? "",
+          health: data.frontend.current ? (data.frontend.current.ok ? "up" : "down") : "unknown",
+          latencyMs: data.frontend.current?.latencyMs ?? null,
+          lastCheckedAt: data.frontend.current?.checkedAt ?? "",
+        },
+        backend: {
+          url: data.backend.url ?? "",
+          health: data.backend.current ? (data.backend.current.ok ? "up" : "down") : "unknown",
+          latencyMs: data.backend.current?.latencyMs ?? null,
+          lastCheckedAt: data.backend.current?.checkedAt ?? "",
+        },
+        uptime24h: data.frontend.uptime24h ?? data.backend.uptime24h ?? 0,
+        downtimeEvents24h: 0,
+        updatedAt: new Date().toISOString(),
+      };
+    },
+  );
+  const snapshot = monitoringState.data;
   const [refreshing, setRefreshing] = useState(false);
   const [offline, setOffline] = useState(false);
 
@@ -36,6 +71,7 @@ export default function MonitoringScreen() {
     setRefreshing(true);
     const connectivity = await getConnectivity();
     setOffline(!connectivity.connected || connectivity.internetReachable === false);
+    await monitoringState.refresh();
     setTimeout(() => setRefreshing(false), 500);
   }
 

@@ -37,6 +37,7 @@ export const deployments: Deployment[] = [
   {
     id: "dep_storefront",
     projectId: "storefront",
+    repositoryId: "storefront",
     projectName: "storefront",
     repository: "taj-2005/storefront",
     branch: "main",
@@ -52,6 +53,7 @@ export const deployments: Deployment[] = [
   {
     id: "dep_api",
     projectId: "payment-api",
+    repositoryId: "payment-api",
     projectName: "payment-api",
     repository: "taj-2005/payment-api",
     branch: "main",

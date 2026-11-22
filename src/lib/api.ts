@@ -54,23 +54,18 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
   return response.json() as Promise<T>;
 }
 
-export async function retryDeployment(deploymentId: string): Promise<{ deploymentId: string }> {
-  void deploymentId;
-  throw new ApiError(
-    "The documented API does not expose a dedicated retry endpoint. Start a new deployment instead.",
-    null,
-  );
-}
-
-export async function redeployProject(
-  projectId: string,
-  commit: string,
-): Promise<{ deploymentId: string }> {
-  return apiFetch<{ deploymentId: string }>(
+export async function redeployRepository(
+  repositoryId: string,
+  envVars?: { key: string; value: string }[],
+): Promise<{ deploymentId: string; status: string }> {
+  return apiFetch<{ deploymentId: string; status: string }>(
     `/api/v1/deployments`,
     {
       method: "POST",
-      body: JSON.stringify({ projectId, commit }),
+      body: JSON.stringify({
+        repositoryId,
+        ...(envVars?.length ? { envVars } : {}),
+      }),
     },
   );
 }
@@ -80,4 +75,55 @@ export async function revokeMobileDevice(deviceId: string): Promise<void> {
     `/api/v1/mobile/devices/${encodeURIComponent(deviceId)}`,
     { method: "DELETE" },
   );
+}
+
+export async function fetchRepositories() {
+  return apiFetch<import("@/lib/deplo-api").Repository[]>("/api/v1/repos");
+}
+
+export async function syncRepositories() {
+  return apiFetch<{ synced: number }>("/api/v1/repos/sync", { method: "POST" });
+}
+
+export async function fetchDeployments() {
+  return apiFetch<import("@/lib/deplo-api").Deployment[]>("/api/v1/deployments");
+}
+
+export async function fetchDeployment(deploymentId: string) {
+  return apiFetch<import("@/lib/deplo-api").DeploymentDetail>(
+    `/api/v1/deployments/${encodeURIComponent(deploymentId)}`,
+  );
+}
+
+export async function provideDeploymentEnv(
+  deploymentId: string,
+  envVars: { key: string; value: string }[],
+) {
+  return apiFetch<{ deploymentId: string; status: string }>(
+    `/api/v1/deployments/${encodeURIComponent(deploymentId)}/env`,
+    { method: "POST", body: JSON.stringify({ envVars }) },
+  );
+}
+
+export async function cancelDeployment(deploymentId: string) {
+  return apiFetch<{ deploymentId: string; status: string }>(
+    `/api/v1/deployments/${encodeURIComponent(deploymentId)}`,
+    { method: "DELETE" },
+  );
+}
+
+export async function fetchProjectMonitoring(repositoryId: string) {
+  return apiFetch<import("@/lib/deplo-api").ProjectMonitoring>(
+    `/api/v1/projects/${encodeURIComponent(repositoryId)}/monitoring`,
+  );
+}
+
+export async function verifySession() {
+  return apiFetch<{
+    userId: string;
+    email: string;
+    name: string;
+    githubLogin: string;
+    avatarUrl: string | null;
+  }>("/api/v1/auth/me");
 }

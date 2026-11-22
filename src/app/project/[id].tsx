@@ -4,11 +4,50 @@ import { ArrowLeft, ExternalLink, GitBranch, Globe, Server } from "lucide-react-
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusPill } from "@/components/status-pill";
 import { getLatestDeployment, getProject } from "@/lib/mobile-data";
+import { useCachedData } from "@/hooks/use-cached-data";
+import { fetchDeployments, fetchRepositories } from "@/lib/api";
+import type { Repository } from "@/lib/deplo-api";
 
 export default function ProjectDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const project = getProject(id);
-  const latestDeployment = getLatestDeployment(id);
+  const fallbackProject = getProject(id);
+  const repositoriesState = useCachedData<Repository[]>(
+    "deplo.mobile.projects",
+    fallbackProject
+      ? [{
+          id,
+          name: fallbackProject.name,
+          fullName: fallbackProject.repository,
+          isPrivate: fallbackProject.private,
+          defaultBranch: fallbackProject.branch,
+          updatedAt: "",
+          language: "TypeScript",
+          description: null,
+          url: `https://github.com/${fallbackProject.repository}`,
+        }]
+      : [],
+    fetchRepositories,
+  );
+  const projectRepository = repositoriesState.data?.find((repository) => repository.id === id);
+  const latestDeploymentState = useCachedData(
+    `deplo.mobile.project.${id}.deployments`,
+    getLatestDeployment(id) ? [getLatestDeployment(id)!] : [],
+    () => fetchDeployments().then((deployments) =>
+      deployments.filter((deployment) => deployment.repositoryId === id),
+    ),
+  );
+  const latestDeployment = latestDeploymentState.data?.[0];
+  const project = fallbackProject ?? (projectRepository
+    ? {
+        id: projectRepository.id,
+        name: projectRepository.name,
+        repository: projectRepository.fullName,
+        branch: projectRepository.defaultBranch,
+        private: projectRepository.isPrivate,
+        environment: "Preview" as const,
+        status: "Preview" as const,
+      }
+    : null);
 
   if (!project) {
     return (

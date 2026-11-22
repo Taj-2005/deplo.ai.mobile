@@ -5,6 +5,9 @@ import { Boxes, FolderGit2, Lock, Search } from "lucide-react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ScreenHeader } from "@/components/screen-header";
 import { StatusPill } from "@/components/status-pill";
+import { useCachedData } from "@/hooks/use-cached-data";
+import { fetchRepositories } from "@/lib/api";
+import type { Repository } from "@/lib/deplo-api";
 
 const projects = [
   { name: "storefront", owner: "taj-2005/storefront", branch: "main", private: true, status: "Live", tone: "success" as const },
@@ -14,7 +17,32 @@ const projects = [
 
 export default function ProjectsScreen() {
   const [query, setQuery] = useState("");
-  const filtered = projects.filter((project) =>
+  const repositoryState = useCachedData<Repository[]>(
+    "deplo.mobile.projects",
+    projects.map((project, index) => ({
+      id: ["storefront", "payment-api", "deplo-docs"][index],
+      name: project.name,
+      fullName: project.owner,
+      isPrivate: project.private,
+      defaultBranch: project.branch,
+      updatedAt: new Date().toISOString(),
+      language: "TypeScript",
+      description: null,
+      url: `https://github.com/${project.owner}`,
+    })),
+    fetchRepositories,
+  );
+  const liveProjects = repositoryState.data ?? [];
+  const normalizedProjects = liveProjects.map((project) => ({
+    name: project.name,
+    owner: project.fullName,
+    branch: project.defaultBranch,
+    private: project.isPrivate,
+    status: "Preview",
+    tone: "warning" as const,
+    id: project.id,
+  }));
+  const filtered = normalizedProjects.filter((project) =>
     `${project.name} ${project.owner}`.toLowerCase().includes(query.toLowerCase()),
   );
 
@@ -43,7 +71,7 @@ export default function ProjectsScreen() {
             <Pressable
               key={project.owner}
               accessibilityRole="button"
-              onPress={() => router.push(`/project/${project.name}`)}
+              onPress={() => router.push(`/project/${project.id}`)}
               className={`flex-row items-center gap-3 p-4 ${index > 0 ? "border-t border-slate-200" : ""}`}
             >
               <View className="h-11 w-11 items-center justify-center border border-slate-200 bg-slate-50">

@@ -4,6 +4,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { ArrowLeft, Eye, EyeOff, KeyRound } from "lucide-react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { getDeployment } from "@/lib/mobile-data";
+import { provideDeploymentEnv } from "@/lib/api";
 
 export default function DeploymentEnvironmentScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -92,16 +93,25 @@ export default function DeploymentEnvironmentScreen() {
 
         <Pressable
           accessibilityRole="button"
-          onPress={() => {
+          onPress={async () => {
             const missing = Object.entries(values).filter(([, value]) => !value.trim());
             if (missing.length) {
               Alert.alert("Required values missing", "Complete all required environment fields.");
               return;
             }
-            Alert.alert(
-              "Secure submission",
-              "Environment values require the matching production API endpoint before they can be submitted.",
-            );
+            try {
+              const result = await provideDeploymentEnv(
+                id,
+                Object.entries(values).map(([key, value]) => ({ key, value })),
+              );
+              Alert.alert("Environment submitted", `Deployment resumed with status ${result.status}.`);
+              router.replace(`/deployments/${result.deploymentId}`);
+            } catch (error) {
+              Alert.alert(
+                "Submission failed",
+                error instanceof Error ? error.message : "Environment values could not be submitted.",
+              );
+            }
           }}
           className="mx-5 mt-5 items-center border border-deplo-black bg-deplo-black px-4 py-4"
         >

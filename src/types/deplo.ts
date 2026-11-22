@@ -24,6 +24,7 @@ export interface Project {
 export interface Deployment {
   id: string;
   projectId: string;
+  repositoryId: string;
   projectName: string;
   repository: string;
   branch: string;

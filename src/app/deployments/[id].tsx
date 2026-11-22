@@ -7,11 +7,38 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { ActionSheet } from "@/components/action-sheet";
 import { StatusPill } from "@/components/status-pill";
 import { deploymentLogs, getDeployment } from "@/lib/mobile-data";
-import { redeployProject, retryDeployment } from "@/lib/api";
+import { redeployRepository, fetchDeployment } from "@/lib/api";
+import { useCachedData } from "@/hooks/use-cached-data";
+import type { Deployment } from "@/types/deplo";
 
 export default function DeploymentDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const deployment = getDeployment(id);
+  const fallbackDeployment = getDeployment(id);
+  const deploymentState = useCachedData<Deployment | null>(
+    `deplo.mobile.deployment.${id}`,
+    fallbackDeployment ?? null,
+    async () => {
+      const detail = await fetchDeployment(id);
+      return {
+        id: detail.id,
+        projectId: detail.repositoryId,
+        repositoryId: detail.repositoryId,
+        projectName: detail.repositoryName,
+        repository: detail.repositoryFullName,
+        branch: detail.branch,
+        status: detail.status,
+        environment: detail.branch === "main" || detail.branch === "master" ? "Production" : "Preview",
+        startedAt: detail.createdAt,
+        durationSeconds: detail.duration ?? undefined,
+        commit: detail.updatedAt,
+        frontendUrl: detail.frontendUrl ?? undefined,
+        backendUrl: detail.backendUrl ?? undefined,
+        firstError: detail.error ?? undefined,
+        requiredEnvVars: detail.envVariables.filter((item) => item.isRequired).map((item) => item.key),
+      };
+    },
+  );
+  const deployment = deploymentState.data;
   const [stage, setStage] = useState<"All" | "Install" | "Build" | "Deploy">("All");
   const [retryVisible, setRetryVisible] = useState(false);
   const [redeployVisible, setRedeployVisible] = useState(false);
@@ -50,7 +77,7 @@ export default function DeploymentDetailScreen() {
     setActionPending(true);
     setActionError(null);
     try {
-      const result = await retryDeployment(deployment.id);
+      const result = await redeployRepository(deployment.repositoryId);
       setActionResult(`Retry started as deployment ${result.deploymentId}.`);
     } catch (error) {
       setActionError(error instanceof Error ? error.message : "The retry could not be started.");
@@ -65,7 +92,7 @@ export default function DeploymentDetailScreen() {
     setActionPending(true);
     setActionError(null);
     try {
-      const result = await redeployProject(deployment.projectId, deployment.commit);
+      const result = await redeployRepository(deployment.repositoryId);
       setActionResult(`Redeploy started as deployment ${result.deploymentId}.`);
     } catch (error) {
       setActionError(error instanceof Error ? error.message : "The redeploy could not be started.");

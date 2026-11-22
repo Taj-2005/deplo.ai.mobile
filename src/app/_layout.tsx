@@ -7,7 +7,8 @@ import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { getNotificationRoute, type NotificationRouteData } from "@/lib/notification-routing";
 import { configureNotifications } from "@/lib/notifications";
-import { getSessionToken } from "@/lib/session";
+import { clearSession, getSessionToken } from "@/lib/session";
+import { verifySession } from "@/lib/api";
 import { subscribeToAppResume } from "@/lib/auth-lifecycle";
 import { Pressable, Text, View } from "react-native";
 import { authenticateForAppResume } from "@/lib/biometrics";
@@ -21,8 +22,21 @@ export default function RootLayout() {
     let cancelled = false;
     void getSessionToken().then((token) => {
       if (cancelled) return;
-      setSessionChecked(true);
-      if (!token) router.replace("/auth/sign-in");
+      if (!token) {
+        setSessionChecked(true);
+        router.replace("/auth/sign-in");
+        return;
+      }
+      void verifySession()
+        .then(() => setSessionChecked(true))
+        .catch(async (error) => {
+          if (typeof error === "object" && error && "status" in error &&
+              (error.status === 401 || error.status === 403)) {
+            await clearSession();
+            if (!cancelled) router.replace("/auth/sign-in");
+          }
+          if (!cancelled) setSessionChecked(true);
+        });
     });
 
     void configureNotifications();
