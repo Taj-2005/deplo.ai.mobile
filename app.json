@@ -9,7 +9,10 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "ai.deplo.mobile"
+      "bundleIdentifier": "ai.deplo.mobile",
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "Deplo uses Face ID to protect deployment controls after the app resumes."
+      }
     },
     "android": {
       "package": "ai.deplo.mobile",

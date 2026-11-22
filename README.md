@@ -14,6 +14,10 @@ Official Expo and React Native boilerplate for the Deplo mobile application.
 - React Native Worklets
 - Safe Area Context
 - Expo Router
+- Expo Notifications
+- Expo SecureStore
+- Expo Local Authentication
+- Expo EAS build profiles
 
 ## Requirements
 
@@ -51,6 +55,37 @@ npm run typecheck
 npm run lint
 npm run doctor
 ```
+
+Validate the submission checklist:
+
+```text
+docs/SUBMISSION_CHECKLIST.md
+```
+
+## EAS builds
+
+Development build:
+
+```bash
+npx eas-cli@latest build --profile development --platform android
+npx eas-cli@latest build --profile development --platform ios
+```
+
+Internal preview:
+
+```bash
+npx eas-cli@latest build --profile preview --platform android
+npx eas-cli@latest build --profile preview --platform ios
+```
+
+Production build:
+
+```bash
+npx eas-cli@latest build --profile production --platform all
+```
+
+Native credentials, push credentials, and production environment variables
+must be configured in the owner's EAS account. They must not be committed.
 
 ## Development workflow
 
