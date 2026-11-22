@@ -22,29 +22,27 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Set up Expo and EAS
-        uses: expo/expo-github-action@v8
+      - name: Set up Java
+        uses: actions/setup-java@v4
         with:
-          eas-version: latest
-          packager: npm
-          token: ${{ secrets.EXPO_TOKEN }}
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Build APK with EAS
-        run: eas build --platform android --profile preview --non-interactive --wait --json > eas-build.json
-
-      - name: Download APK
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      - name: Generate Android project and build release APK
         run: |
           set -euo pipefail
-          apk_url="$(jq -er 'if type == "array" then .[0].artifacts.buildUrl // empty else .artifacts.buildUrl // empty end' eas-build.json)"
-          curl --fail --location --retry 3 \
-            --header "Authorization: Bearer ${EXPO_TOKEN}" \
-            "${apk_url}" \
-            --output "deplo-android-${GITHUB_SHA::7}.apk"
+          node -e 'const fs=require("fs");const p="app.json";const c=JSON.parse(fs.readFileSync(p,"utf8"));c.expo.android.versionCode=Number(process.env.GITHUB_RUN_NUMBER);fs.writeFileSync(p,JSON.stringify(c,null,2)+"\n");'
+          npx expo prebuild --platform android --no-install
+          cd android
+          ./gradlew --no-daemon assembleRelease
+          cd ..
+          cp android/app/build/outputs/apk/release/app-release.apk "deplo-android-${GITHUB_SHA::7}.apk"
           test -s "deplo-android-${GITHUB_SHA::7}.apk"
 
       - name: Prepare release metadata

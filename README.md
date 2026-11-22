@@ -129,16 +129,17 @@ must be configured in the owner's EAS account. They must not be committed.
 
 ## Android APK releases
 
-`.github/workflows/android-apk-release.yml` runs on every branch push. It builds
-an installable APK with the EAS `preview` profile and attaches it to a
-commit-specific GitHub Release. Pushes to `main` create regular releases;
-other branches create prereleases.
+`.github/workflows/android-apk-release.yml` runs on every branch push. It
+generates the Android project with Expo Prebuild, compiles the release variant
+with Gradle, and attaches the APK to a commit-specific GitHub Release. Pushes
+to `main` create regular releases; other branches create prereleases. The
+workflow uses the run number as the Android version code so successive APKs
+can update the installed app.
 
-Before the workflow can build, add an `EXPO_TOKEN` Actions secret in the
-GitHub repository settings and make sure EAS has Android signing credentials
-for this project. The workflow needs `contents: write`, which is declared in
-the workflow file. GitHub releases are created automatically after a
-successful build.
+No Expo token is needed. The workflow needs `contents: write`, which is
+declared in the workflow file. These APKs are for sideloading and testing, not
+Google Play submission; store distribution requires a dedicated production
+signing key and an AAB build.
 
 ## Development workflow
 
