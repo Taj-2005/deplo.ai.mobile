@@ -94,6 +94,13 @@ export default function ProjectDetailScreen() {
         >
           <Text className="font-mono text-[13px] font-bold text-slate-700">Open monitoring</Text>
         </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.push(`/project/${id}/alerts`)}
+          className="mx-5 mt-3 items-center border border-slate-300 bg-white px-4 py-4"
+        >
+          <Text className="font-mono text-[13px] font-bold text-slate-700">Project alert preferences</Text>
+        </Pressable>
       </ScrollView>
     </SafeAreaView>
   );

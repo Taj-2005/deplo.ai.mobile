@@ -38,3 +38,16 @@ export async function setCategoryEnabled(
   await writeNotificationPreferences(preferences);
   return preferences;
 }
+
+export async function setProjectCategoryEnabled(
+  projectId: string,
+  category: NotificationCategory,
+  enabled: boolean,
+): Promise<NotificationPreferences> {
+  const preferences = await readNotificationPreferences();
+  const projectPreferences = preferences.projectOverrides[projectId] ?? {};
+  projectPreferences[category] = enabled;
+  preferences.projectOverrides[projectId] = projectPreferences;
+  await writeNotificationPreferences(preferences);
+  return preferences;
+}
