@@ -189,6 +189,10 @@ not currently documented by the existing Deplo API:
 - Notification preference synchronization
 - Project notification deep-link payload dispatch
 
-The app includes secure device, cache, preference, and deep-link client state,
-but it must not claim that remote push delivery or mobile OAuth is complete
-until the backend endpoints and callbacks are available.
+The client now uses the mobile device, notification preference, notification
+history, and OAuth callback contracts. It sends Expo push tokens with device
+registration, keeps JWTs in SecureStore, syncs preference updates, marks opened
+history items as read, and routes push taps using the backend route and entity
+identifiers. Physical-device delivery, provider credentials, production backend
+availability, and production deployment still need to be verified before the
+submission demo can claim end-to-end push delivery.

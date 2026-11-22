@@ -2,8 +2,13 @@ import { Platform } from "react-native";
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
 import * as SecureStore from "expo-secure-store";
+import Constants from "expo-constants";
 import { AndroidImportance } from "expo-notifications/build/NotificationChannelManager.types";
 import type { DeviceRegistration, NotificationCategory, NotificationPreferences } from "@/types/notifications";
+import { getOrCreateDeviceId, saveDeviceRegistrationId } from "@/lib/device";
+import { registerMobileDevice } from "@/lib/api";
+import { isDemoMode } from "@/lib/app-config";
+import { getSessionToken } from "@/lib/session";
 
 const DEVICE_PUSH_TOKEN_KEY = "deplo.notifications.push-token";
 
@@ -65,12 +70,45 @@ export async function registerDeviceForPush(): Promise<DeviceRegistration> {
     return { pushToken: null, platform, deviceName, isPhysicalDevice: Device.isDevice };
   }
 
-  const pushToken = (await Notifications.getExpoPushTokenAsync()).data;
+  const projectId = Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
+  const pushToken = (await Notifications.getExpoPushTokenAsync(projectId ? { projectId } : undefined)).data;
+  return syncPushToken(pushToken, platform, deviceName);
+}
+
+async function syncPushToken(
+  pushToken: string,
+  platform: DeviceRegistration["platform"],
+  deviceName: string,
+): Promise<DeviceRegistration> {
+  const deviceId = await getOrCreateDeviceId();
+  if (!isDemoMode && (platform === "ios" || platform === "android")) {
+    const registered = await registerMobileDevice({
+      deviceId,
+      deviceName,
+      platform,
+      pushToken,
+      pushEnabled: true,
+    });
+    const registrationId = registered?.deviceId;
+    if (registrationId) await saveDeviceRegistrationId(registrationId);
+  }
   await SecureStore.setItemAsync(DEVICE_PUSH_TOKEN_KEY, pushToken, {
     keychainService: "ai.deplo.mobile.notifications",
   });
 
-  return { pushToken, platform, deviceName, isPhysicalDevice: true };
+  return { deviceId, pushToken, platform, deviceName, isPhysicalDevice: true };
+}
+
+export function subscribeToPushTokenRefresh(): Notifications.EventSubscription {
+  return Notifications.addPushTokenListener(() => {
+    void (async () => {
+      if (isDemoMode || !(await getSessionToken()) || !Device.isDevice) return;
+      const projectId = Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
+      const pushToken = (await Notifications.getExpoPushTokenAsync(projectId ? { projectId } : undefined)).data;
+      const platform = Platform.OS === "ios" || Platform.OS === "android" ? Platform.OS : "web";
+      await syncPushToken(pushToken, platform, Device.deviceName || Device.modelName || "Deplo device");
+    })().catch(() => undefined);
+  });
 }
 
 export function getDefaultNotificationPreferences(): NotificationPreferences {

@@ -4,7 +4,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { ArrowLeft, BellRing } from "lucide-react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
-  readNotificationPreferences,
+  loadNotificationPreferences,
   setProjectCategoryEnabled,
 } from "@/lib/notification-preferences";
 import { getProject } from "@/lib/mobile-data";
@@ -55,7 +55,7 @@ export default function ProjectAlertPreferencesScreen() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      void readNotificationPreferences().then((preferences) => {
+      void loadNotificationPreferences().then((preferences) => {
         const overrides = preferences.projectOverrides[id] ?? {};
         setCategories({
           "deployment-success": overrides["deployment-success"] ?? preferences.categories["deployment-success"],
@@ -71,7 +71,11 @@ export default function ProjectAlertPreferencesScreen() {
 
   async function handleCategoryChange(category: NotificationCategory, enabled: boolean) {
     setCategories((current) => ({ ...current, [category]: enabled }));
-    await setProjectCategoryEnabled(id, category, enabled);
+    try {
+      await setProjectCategoryEnabled(id, category, enabled);
+    } catch {
+      setCategories((current) => ({ ...current, [category]: !enabled }));
+    }
   }
 
   return (

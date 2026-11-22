@@ -8,11 +8,12 @@ import { clearSession, getBiometricPreference, setBiometricPreference } from "@/
 import { authenticateForAppResume, getBiometricStatus } from "@/lib/biometrics";
 import { clearPushRegistration, registerDeviceForPush } from "@/lib/notifications";
 import {
-  readNotificationPreferences,
+  loadNotificationPreferences,
   writeNotificationPreferences,
 } from "@/lib/notification-preferences";
-import { clearDeviceIdentity, getOrCreateDeviceId } from "@/lib/device";
-import { revokeMobileDevice, verifySession } from "@/lib/api";
+import { clearDeviceIdentity, getDeviceRegistrationId, getOrCreateDeviceId } from "@/lib/device";
+import { fetchMobileDevices, revokeMobileDevice, verifySession, type MobileDevice } from "@/lib/api";
+import { isDemoMode } from "@/lib/app-config";
 
 function SettingRow({
   label,
@@ -66,12 +67,18 @@ export default function SettingsScreen() {
     name: string;
     email: string;
   } | null>(null);
+  const [devices, setDevices] = useState<MobileDevice[] | null>(null);
+  const [currentDeviceId, setCurrentDeviceId] = useState<string | null>(null);
 
   useEffect(() => {
+    void getOrCreateDeviceId().then(setCurrentDeviceId);
     void getBiometricPreference().then(setBiometric);
-    void readNotificationPreferences().then((preferences) =>
+    void loadNotificationPreferences().then((preferences) =>
       setNotifications(preferences.enabled),
     );
+    if (!isDemoMode) {
+      void fetchMobileDevices().then(setDevices).catch(() => setDevices(null));
+    }
     void verifySession()
       .then((profile) => setAccount({
         name: profile.name || profile.githubLogin,
@@ -99,18 +106,27 @@ export default function SettingsScreen() {
 
   async function handlePushChange(enabled: boolean) {
     setNotifications(enabled);
-    const preferences = await readNotificationPreferences();
-    preferences.enabled = enabled;
-    await writeNotificationPreferences(preferences);
-    if (!enabled) return;
-
-    const registration = await registerDeviceForPush();
-    Alert.alert(
-      registration.pushToken ? "Push notifications enabled" : "Push notifications unavailable",
-      registration.pushToken
-        ? `This ${registration.platform} device is registered for Deplo alerts.`
-        : "Allow notification permission or use a physical device to complete registration.",
-    );
+    try {
+      let registration = null;
+      if (enabled) registration = await registerDeviceForPush();
+      const preferences = await loadNotificationPreferences();
+      preferences.enabled = enabled;
+      await writeNotificationPreferences(preferences);
+      if (registration) {
+        Alert.alert(
+          registration.pushToken ? "Push notifications enabled" : "Push notifications unavailable",
+          registration.pushToken
+            ? `This ${registration.platform} device is registered for Deplo alerts.`
+            : "Allow notification permission or use a physical device to complete registration.",
+        );
+      }
+    } catch (error) {
+      setNotifications(!enabled);
+      Alert.alert(
+        "Notification settings not saved",
+        error instanceof Error ? error.message : "The server could not update notification settings.",
+      );
+    }
   }
 
   function handleSignOut() {
@@ -120,8 +136,8 @@ export default function SettingsScreen() {
         text: "Sign out",
         style: "destructive",
         onPress: () => {
-          void getOrCreateDeviceId()
-            .then((deviceId) => revokeMobileDevice(deviceId))
+          void Promise.all([getOrCreateDeviceId(), getDeviceRegistrationId()])
+            .then(([localId, registrationId]) => revokeMobileDevice(registrationId ?? localId))
             .catch(() => undefined)
             .finally(async () => {
               await clearPushRegistration();
@@ -129,6 +145,24 @@ export default function SettingsScreen() {
               await clearSession();
               router.replace("/auth/sign-in");
             });
+        },
+      },
+    ]);
+  }
+
+  function confirmDeviceRevoke(device: MobileDevice) {
+    Alert.alert(`Revoke ${device.deviceName}?`, "This device will stop receiving Deplo push notifications.", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Revoke device",
+        style: "destructive",
+        onPress: () => {
+          void revokeMobileDevice(device.deviceId)
+            .then(async () => {
+              setDevices((current) => current?.filter((item) => item.deviceId !== device.deviceId) ?? []);
+              if ((await getDeviceRegistrationId()) === device.deviceId) await clearPushRegistration();
+            })
+            .catch((error) => Alert.alert("Could not revoke device", error instanceof Error ? error.message : "The server could not revoke this device."));
         },
       },
     ]);
@@ -172,17 +206,20 @@ export default function SettingsScreen() {
           />
           <SettingRow
             label="Device registration"
-            description="This phone · Trusted"
+            description={devices === null ? "This phone · Registration status" : `${devices.length} registered device${devices.length === 1 ? "" : "s"}`}
             icon={<Smartphone size={16} strokeWidth={1.7} className="text-slate-600" />}
             trailing={<ChevronRight size={16} strokeWidth={1.7} className="text-slate-400" />}
-            onPress={() => void registerDeviceForPush().then((registration) => {
-              Alert.alert(
-                registration.pushToken ? "Device registered" : "Device registration unavailable",
-                registration.pushToken
-                  ? `${registration.deviceName} is registered for push alerts.`
-                  : "Allow notification permission or use a physical device.",
-              );
-            })}
+            onPress={() => void registerDeviceForPush()
+              .then((registration) => {
+                Alert.alert(
+                  registration.pushToken ? "Device registered" : "Device registration unavailable",
+                  registration.pushToken
+                    ? `${registration.deviceName} is registered for push alerts.`
+                    : "Allow notification permission or use a physical device.",
+                );
+                if (!isDemoMode) void fetchMobileDevices().then(setDevices).catch(() => undefined);
+              })
+              .catch((error) => Alert.alert("Device registration failed", error instanceof Error ? error.message : "The server could not register this device."))}
           />
           <SettingRow
             label="Sign out"
@@ -192,6 +229,25 @@ export default function SettingsScreen() {
             onPress={handleSignOut}
           />
         </View>
+
+        {!isDemoMode && devices?.length ? (
+          <View className="mx-5 mt-5 border border-slate-200 bg-white">
+            <Text className="border-b border-slate-200 px-4 py-3 font-mono text-[10px] font-bold uppercase tracking-wider text-slate-500">
+              Registered devices
+            </Text>
+            {devices.map((device, index) => (
+              <View key={device.deviceId} className={`flex-row items-center gap-3 px-4 py-3 ${index > 0 ? "border-t border-slate-100" : ""}`}>
+                <View className="flex-1">
+                  <Text className="text-[12px] font-bold text-deplo-black">{device.deviceName}{device.deviceId === currentDeviceId ? " · This device" : ""}</Text>
+                  <Text className="mt-0.5 font-mono text-[10px] uppercase text-slate-500">{device.platform}</Text>
+                </View>
+                <Pressable accessibilityRole="button" onPress={() => confirmDeviceRevoke(device)} className="border border-red-200 px-3 py-2">
+                  <Text className="font-mono text-[10px] font-bold uppercase text-red-700">Revoke</Text>
+                </Pressable>
+              </View>
+            ))}
+          </View>
+        ) : null}
 
         <View className="mx-5 mt-5 border border-slate-200 bg-white p-4">
           <Text className="font-mono text-[10px] font-bold uppercase tracking-wider text-slate-500">

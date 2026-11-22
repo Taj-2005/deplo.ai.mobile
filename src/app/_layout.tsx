@@ -6,7 +6,7 @@ import * as Notifications from "expo-notifications";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { getNotificationRoute, type NotificationRouteData } from "@/lib/notification-routing";
-import { configureNotifications } from "@/lib/notifications";
+import { configureNotifications, subscribeToPushTokenRefresh } from "@/lib/notifications";
 import { clearSession, getSessionToken } from "@/lib/session";
 import { verifySession } from "@/lib/api";
 import { subscribeToAppResume } from "@/lib/auth-lifecycle";
@@ -16,6 +16,7 @@ import { isDemoMode } from "@/lib/app-config";
 
 export default function RootLayout() {
   const responseSubscription = useRef<Notifications.EventSubscription | null>(null);
+  const pushTokenSubscription = useRef<Notifications.EventSubscription | null>(null);
   const [sessionChecked, setSessionChecked] = useState(isDemoMode);
   const [biometricLocked, setBiometricLocked] = useState(false);
 
@@ -42,6 +43,7 @@ export default function RootLayout() {
     });
 
     void configureNotifications();
+    pushTokenSubscription.current = subscribeToPushTokenRefresh();
     responseSubscription.current =
       Notifications.addNotificationResponseReceivedListener((response) => {
         const data = response.notification.request.content.data as NotificationRouteData;
@@ -61,6 +63,7 @@ export default function RootLayout() {
     return () => {
       cancelled = true;
       responseSubscription.current?.remove();
+      pushTokenSubscription.current?.remove();
       unsubscribeResume();
     };
   }, []);

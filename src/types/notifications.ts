@@ -12,8 +12,21 @@ export interface NotificationPreferences {
 }
 
 export interface DeviceRegistration {
+  deviceId?: string;
   pushToken: string | null;
   platform: "ios" | "android" | "web";
   deviceName: string;
   isPhysicalDevice: boolean;
+}
+
+export interface MobileNotification {
+  id: string;
+  title: string;
+  body: string;
+  category: NotificationCategory | string;
+  createdAt: string;
+  isRead: boolean;
+  route?: string;
+  projectId?: string;
+  deploymentId?: string;
 }

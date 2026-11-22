@@ -5,14 +5,14 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { setSessionToken } from "@/lib/session";
 
 export default function AuthCallbackScreen() {
-  const params = useLocalSearchParams<{ token?: string; error?: string }>();
+  const params = useLocalSearchParams<{ token?: string; error?: string; auth?: string }>();
   const [message, setMessage] = useState("Completing GitHub sign-in");
 
   useEffect(() => {
     let cancelled = false;
     const complete = async () => {
-      if (params.error) {
-        if (!cancelled) setMessage(params.error);
+      if (params.error || params.auth === "failed") {
+        if (!cancelled) setMessage(params.error || "GitHub sign-in failed. Please try again.");
         return;
       }
       if (!params.token) {
@@ -28,9 +28,9 @@ export default function AuthCallbackScreen() {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [params.error, params.token]);
+  }, [params.auth, params.error, params.token]);
 
-  const hasFailure = !!params.error || !params.token;
+  const hasFailure = !!params.error || params.auth === "failed" || !params.token;
 
   return (
     <SafeAreaView className="flex-1 items-center justify-center bg-white px-8">

@@ -28,19 +28,25 @@ Before the first store build:
 Do not commit Apple credentials, API keys, signing files, service-account
 credentials, or provider secrets.
 
-## Backend prerequisites
+## Mobile backend contract
 
-The mobile app currently requires or is ready for these server capabilities:
+The mobile app expects the following server capabilities. Device registration
+sends `deviceId`, `platform`, `deviceName`, the Expo token as `pushToken`, and
+`pushEnabled`. The server returns that device ID for revocation.
 
 ```text
-GET  /api/v1/mobile/deployments
 GET  /api/v1/auth/me
+GET  /api/v1/auth/github?redirect=deplo://auth/callback
 POST /api/v1/deployments/:id/retry
 POST /api/v1/deployments
-DELETE /api/v1/mobile/devices/:id
 POST /api/v1/mobile/devices
-GET  /api/v1/mobile/monitoring/:projectId
+GET  /api/v1/mobile/devices
+DELETE /api/v1/mobile/devices/:id
+GET  /api/v1/mobile/notifications/preferences
+PUT  /api/v1/mobile/notifications/preferences
 GET  /api/v1/mobile/notifications
+PATCH /api/v1/mobile/notifications/:id/read
+GET  /api/v1/mobile/monitoring/:projectId
 ```
 
 The backend must reject unauthorized retry/redeploy requests and must keep
@@ -60,6 +66,8 @@ Vercel, Render, environment, and provider credentials off the device.
 - Token refresh
 - Device revoke
 - Per-project preference override
+- Deployment-started notification
+- Notification history read-state update
 
 ## Authentication acceptance
 
