@@ -155,3 +155,19 @@ babel.config.js      Expo and Worklets Babel configuration
 src/app/             Expo Router screens and layouts
 assets/              Application icons and images
 ```
+
+## Current integration boundaries
+
+The mobile app uses the documented Deplo REST contracts for authentication,
+repositories, deployments, environment values, monitoring, and account
+verification. The following backend capabilities require server support that is
+not currently documented by the existing Deplo API:
+
+- Mobile-specific OAuth callback redirection
+- Push notification token registration and revocation
+- Notification preference synchronization
+- Project notification deep-link payload dispatch
+
+The app includes secure device, cache, preference, and deep-link client state,
+but it must not claim that remote push delivery or mobile OAuth is complete
+until the backend endpoints and callbacks are available.
