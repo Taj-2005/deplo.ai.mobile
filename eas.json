@@ -10,7 +10,7 @@
     },
     "preview": {
       "distribution": "internal",
-      "autoIncrement": "versionCode",
+      "autoIncrement": true,
       "android": {
         "buildType": "apk"
       }
