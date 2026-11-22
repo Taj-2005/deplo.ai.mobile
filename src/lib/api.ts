@@ -17,7 +17,7 @@ function getApiOrigin(): string {
   const extraOrigin = Constants.expoConfig?.extra?.apiUrl;
   return typeof extraOrigin === "string"
     ? extraOrigin.replace(/\/$/, "")
-    : "https://deplo-ai.onrender.com";
+    : "https://www.deplo.in";
 }
 
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
@@ -55,9 +55,10 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
 }
 
 export async function retryDeployment(deploymentId: string): Promise<{ deploymentId: string }> {
-  return apiFetch<{ deploymentId: string }>(
-    `/api/v1/deployments/${deploymentId}/retry`,
-    { method: "POST" },
+  void deploymentId;
+  throw new ApiError(
+    "The documented API does not expose a dedicated retry endpoint. Start a new deployment instead.",
+    null,
   );
 }
 

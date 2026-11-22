@@ -1,10 +1,13 @@
 export type DeploymentStatus =
-  | "QUEUED"
-  | "BUILDING"
-  | "DEPLOYING"
+  | "PENDING"
+  | "ANALYZING"
+  | "WAITING_FOR_ENV"
+  | "DEPLOYING_BACKEND"
+  | "BACKEND_READY"
+  | "DEPLOYING_FRONTEND"
   | "COMPLETED"
   | "FAILED"
-  | "CANCELED";
+  | "CANCELLED";
 
 export interface Project {
   id: string;

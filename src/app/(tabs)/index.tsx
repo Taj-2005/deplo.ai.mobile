@@ -65,7 +65,7 @@ export default function OverviewScreen() {
         requiredEnvVars: [],
       },
     ],
-    () => apiFetch<Deployment[]>("/api/v1/mobile/deployments"),
+    () => apiFetch<Deployment[]>("/api/v1/deployments"),
   );
 
   async function refresh() {

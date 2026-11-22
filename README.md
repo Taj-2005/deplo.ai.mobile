@@ -48,6 +48,25 @@ npm run android
 npm run web
 ```
 
+## Environment
+
+Copy `.env.example` to `.env.local` for local overrides:
+
+```bash
+cp .env.example .env.local
+```
+
+The mobile API client defaults to the production Deplo origin:
+
+```text
+https://www.deplo.in
+```
+
+Set `EXPO_PUBLIC_API_URL` only for a trusted staging or development origin.
+Values prefixed with `EXPO_PUBLIC_` are included in the client bundle; provider
+credentials, provider API keys, and deployment secrets must never be placed in
+mobile environment variables.
+
 ## Validation
 
 ```bash
