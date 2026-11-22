@@ -6,6 +6,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { MetricCard } from "@/components/metric-card";
 import { ScreenHeader } from "@/components/screen-header";
 import { StatusPill } from "@/components/status-pill";
+import { useCachedData } from "@/hooks/use-cached-data";
+import { apiFetch } from "@/lib/api";
+import type { Deployment } from "@/types/deplo";
 
 const recentDeployments = [
   {
@@ -28,10 +31,47 @@ const recentDeployments = [
 
 export default function OverviewScreen() {
   const [refreshing, setRefreshing] = useState(false);
+  const overview = useCachedData<Deployment[]>(
+    "deplo.mobile.overview.deployments",
+    [
+      {
+        id: "dep_storefront",
+        projectId: "storefront",
+        projectName: "storefront",
+        repository: "taj-2005/storefront",
+        branch: "main",
+        status: "COMPLETED",
+        environment: "Production",
+        startedAt: "2026-11-22T03:42:00+05:30",
+        durationSeconds: 98,
+        commit: "3f8a2c1",
+        frontendUrl: "https://storefront.vercel.app",
+        backendUrl: "https://storefront-api.onrender.com",
+        requiredEnvVars: [],
+      },
+      {
+        id: "dep_api",
+        projectId: "payment-api",
+        projectName: "payment-api",
+        repository: "taj-2005/payment-api",
+        branch: "main",
+        status: "FAILED",
+        environment: "Production",
+        startedAt: "2026-11-22T03:58:00+05:30",
+        durationSeconds: 42,
+        commit: "9e21bc4",
+        backendUrl: "https://payment-api.onrender.com",
+        firstError: "Cannot resolve dependency: @acme/payment-core",
+        requiredEnvVars: [],
+      },
+    ],
+    () => apiFetch<Deployment[]>("/api/v1/mobile/deployments"),
+  );
 
-  function refresh() {
+  async function refresh() {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 700);
+    await overview.refresh();
+    setRefreshing(false);
   }
 
   return (
@@ -116,7 +156,15 @@ export default function OverviewScreen() {
           <Text className="font-mono text-[10px] font-bold uppercase tracking-wider text-slate-500">
             Last updated
           </Text>
-          <Text className="mt-1 text-[12px] text-slate-600">Just now · Cached status unavailable</Text>
+          <Text className="mt-1 text-[12px] text-slate-600">
+            {overview.unavailable
+              ? `${overview.error ?? "Server unavailable"} · Status may be stale`
+              : overview.loading
+                ? "Refreshing from Deplo"
+                : overview.updatedAt
+                  ? `Updated ${new Date(overview.updatedAt).toLocaleTimeString()}`
+                  : "Status unavailable"}
+          </Text>
         </View>
       </ScrollView>
     </SafeAreaView>
