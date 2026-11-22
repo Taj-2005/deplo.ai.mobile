@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Alert, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { ArrowLeft, Eye, EyeOff, KeyRound } from "lucide-react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { getDeployment } from "@/lib/mobile-data";
-import { provideDeploymentEnv } from "@/lib/api";
+import { fetchDeployment, provideDeploymentEnv } from "@/lib/api";
 
 export default function DeploymentEnvironmentScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -14,6 +14,21 @@ export default function DeploymentEnvironmentScreen() {
     JWT_SECRET: "",
   });
   const [revealed, setRevealed] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      void fetchDeployment(id).then((detail) => {
+        setValues(
+          Object.fromEntries(
+            detail.envVariables
+              .filter((item) => item.isRequired)
+              .map((item) => [item.key, ""]),
+          ),
+        );
+      }).catch(() => undefined);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [id]);
 
   if (!deployment) {
     return (

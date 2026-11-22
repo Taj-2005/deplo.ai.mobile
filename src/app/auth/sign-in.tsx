@@ -4,32 +4,61 @@ import { router } from "expo-router";
 import { FolderGit2 } from "lucide-react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { setSessionToken } from "@/lib/session";
+import * as WebBrowser from "expo-web-browser";
+import Constants from "expo-constants";
 
 export default function SignInScreen() {
   const [starting, setStarting] = useState(false);
 
   function startGitHubSignIn() {
     setStarting(true);
-    Alert.alert(
-      "GitHub sign-in",
-      "OAuth is the next integration phase. No provider secret was stored.",
-      [
-        {
-          text: "Continue",
-          onPress: () => {
-            void setSessionToken("development-session-placeholder").finally(() => {
-              setStarting(false);
-              router.replace("/(tabs)");
-            });
-          },
-        },
-        {
-          text: "Cancel",
-          style: "cancel",
-          onPress: () => setStarting(false),
-        },
-      ],
-    );
+    const apiOrigin =
+      process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, "") ||
+      (typeof Constants.expoConfig?.extra?.apiUrl === "string"
+        ? Constants.expoConfig.extra.apiUrl.replace(/\/$/, "")
+        : "https://www.deplo.in");
+    const redirectUrl = "deplo://auth/callback";
+
+    void WebBrowser.openAuthSessionAsync(
+      `${apiOrigin}/api/v1/auth/github`,
+      redirectUrl,
+    ).then(async (result) => {
+      if (result.type !== "success" || !result.url) {
+        setStarting(false);
+        if (result.type !== "cancel") {
+          Alert.alert("Sign-in not completed", "GitHub did not return a usable callback.");
+        }
+        return;
+      }
+
+      try {
+        const callback = new URL(result.url);
+        const token = callback.searchParams.get("token");
+        const error = callback.searchParams.get("error") || callback.searchParams.get("auth");
+        if (token) {
+          await setSessionToken(token);
+          setStarting(false);
+          router.replace("/(tabs)");
+          return;
+        }
+        Alert.alert(
+          "GitHub sign-in failed",
+          error === "failed"
+            ? "The server could not complete GitHub authentication."
+            : "The callback did not include a session token.",
+        );
+      } catch {
+        Alert.alert("GitHub sign-in failed", "The callback URL could not be read.");
+      } finally {
+        setStarting(false);
+      }
+    }).catch((error) => {
+      setStarting(false);
+      Alert.alert(
+        "GitHub sign-in failed",
+        error instanceof Error ? error.message : "The browser could not be opened.",
+      );
+    });
   }
 
   return (

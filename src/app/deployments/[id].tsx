@@ -7,7 +7,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { ActionSheet } from "@/components/action-sheet";
 import { StatusPill } from "@/components/status-pill";
 import { deploymentLogs, getDeployment } from "@/lib/mobile-data";
-import { redeployRepository, fetchDeployment } from "@/lib/api";
+import { redeployRepository, fetchDeployment, cancelDeployment } from "@/lib/api";
 import { useCachedData } from "@/hooks/use-cached-data";
 import type { Deployment } from "@/types/deplo";
 
@@ -42,6 +42,7 @@ export default function DeploymentDetailScreen() {
   const [stage, setStage] = useState<"All" | "Install" | "Build" | "Deploy">("All");
   const [retryVisible, setRetryVisible] = useState(false);
   const [redeployVisible, setRedeployVisible] = useState(false);
+  const [cancelVisible, setCancelVisible] = useState(false);
   const [actionResult, setActionResult] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionPending, setActionPending] = useState(false);
@@ -96,6 +97,21 @@ export default function DeploymentDetailScreen() {
       setActionResult(`Redeploy started as deployment ${result.deploymentId}.`);
     } catch (error) {
       setActionError(error instanceof Error ? error.message : "The redeploy could not be started.");
+    } finally {
+      setActionPending(false);
+    }
+  }
+
+  async function confirmCancel() {
+    if (!deployment || actionPending) return;
+    setCancelVisible(false);
+    setActionPending(true);
+    setActionError(null);
+    try {
+      const result = await cancelDeployment(deployment.id);
+      setActionResult(`Deployment cancelled with status ${result.status}.`);
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : "The deployment could not be cancelled.");
     } finally {
       setActionPending(false);
     }
@@ -193,6 +209,18 @@ export default function DeploymentDetailScreen() {
             <Text className="font-mono text-[12px] font-bold text-slate-700">Redeploy</Text>
           </Pressable>
         </View>
+
+        {deployment.status !== "COMPLETED" &&
+          deployment.status !== "FAILED" &&
+          deployment.status !== "CANCELLED" ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => setCancelVisible(true)}
+            className="mx-5 mt-3 items-center border border-red-200 bg-red-50 px-4 py-3.5"
+          >
+            <Text className="font-mono text-[12px] font-bold text-red-700">Cancel deployment</Text>
+          </Pressable>
+        ) : null}
 
         {deployment.frontendUrl || deployment.backendUrl ? (
           <View className="mx-5 mt-5 border border-slate-200 bg-white">
@@ -297,6 +325,15 @@ export default function DeploymentDetailScreen() {
         destructive
         onCancel={() => setRedeployVisible(false)}
         onConfirm={confirmRedeploy}
+      />
+      <ActionSheet
+        visible={cancelVisible}
+        title="Cancel deployment?"
+        description={`Stop deployment ${deployment.id}. Terminal or completed deployments cannot be cancelled.`}
+        confirmLabel="Cancel deployment"
+        destructive
+        onCancel={() => setCancelVisible(false)}
+        onConfirm={confirmCancel}
       />
     </SafeAreaView>
   );
