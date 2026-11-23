@@ -21,7 +21,7 @@ export default function AuthCallbackScreen() {
       }
 
       await setSessionToken(params.token);
-      if (!cancelled) router.replace("/(tabs)");
+      if (!cancelled) router.replace("/onboarding");
     };
     const timer = setTimeout(() => void complete(), 0);
     return () => {

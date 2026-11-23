@@ -8,7 +8,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { getNotificationRoute, type NotificationRouteData } from "@/lib/notification-routing";
 import { configureNotifications, subscribeToPushTokenRefresh } from "@/lib/notifications";
 import { clearSession, getSessionToken } from "@/lib/session";
-import { verifySession } from "@/lib/api";
+import { fetchIntegrations, verifySession } from "@/lib/api";
 import { subscribeToAppResume } from "@/lib/auth-lifecycle";
 import { Pressable, Text, View } from "react-native";
 import { authenticateForAppResume } from "@/lib/biometrics";
@@ -31,7 +31,17 @@ export default function RootLayout() {
         return;
       }
       void verifySession()
-        .then(() => setSessionChecked(true))
+        .then(async () => {
+          try {
+            const integrations = await fetchIntegrations();
+            const ready = integrations.some((item) => item.provider === "VERCEL" && item.connected) &&
+              integrations.some((item) => item.provider === "RENDER" && item.connected);
+            if (!ready && !cancelled) router.replace("/onboarding");
+          } catch {
+            // Keep the app available during an integration service outage.
+          }
+          if (!cancelled) setSessionChecked(true);
+        })
         .catch(async (error) => {
           if (typeof error === "object" && error && "status" in error &&
               (error.status === 401 || error.status === 403)) {

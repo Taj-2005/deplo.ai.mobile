@@ -46,7 +46,7 @@ export default function SignInScreen() {
         if (token) {
           await setSessionToken(token);
           setStarting(false);
-          router.replace("/(tabs)");
+          router.replace("/onboarding");
           return;
         }
         Alert.alert(

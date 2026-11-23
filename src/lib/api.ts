@@ -20,6 +20,15 @@ export interface MobileDevice {
   updatedAt: string;
 }
 
+export interface IntegrationStatus {
+  provider: "VERCEL" | "RENDER";
+  connected: boolean;
+  accountName: string | null;
+  teamName: string | null;
+  teamId: string | null;
+  connectedAt: string | null;
+}
+
 function getApiOrigin(): string {
   const configured = process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, "");
   if (configured) return configured;
@@ -205,4 +214,23 @@ export async function verifySession() {
     githubLogin: string;
     avatarUrl: string | null;
   }>("/api/v1/auth/me");
+}
+
+export async function fetchIntegrations() {
+  const result = await apiFetch<{ integrations: IntegrationStatus[] }>("/api/v1/integrations");
+  return result.integrations;
+}
+
+export async function getVercelInstallUrl() {
+  const result = await apiFetch<{ url: string }>(
+    "/api/v1/integrations/vercel/install-url?returnTo=onboarding",
+  );
+  return result.url;
+}
+
+export async function connectRender(apiKey: string) {
+  return apiFetch<{ connected: boolean; accountName: string | null; teamName: string | null }>(
+    "/api/v1/integrations/render",
+    { method: "POST", body: JSON.stringify({ apiKey }) },
+  );
 }
