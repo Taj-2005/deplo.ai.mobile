@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { Pressable, RefreshControl, ScrollView, Text, TextInput, View } from "react-native";
 import { router } from "expo-router";
-import { Boxes, FolderGit2, Lock, Search } from "lucide-react-native";
+import { Boxes, FolderGit2, Lock, RefreshCw, Search } from "lucide-react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ScreenHeader } from "@/components/screen-header";
 import { StatusPill } from "@/components/status-pill";
 import { useCachedData } from "@/hooks/use-cached-data";
-import { fetchDeployments, fetchRepositories } from "@/lib/api";
+import { fetchDeployments, fetchRepositories, syncRepositories } from "@/lib/api";
 import type { Deployment, Repository } from "@/lib/deplo-api";
 import { isDemoMode } from "@/lib/app-config";
 import { projects as demoProjects, deployments as demoDeployments } from "@/lib/mobile-data";
@@ -53,6 +53,7 @@ function deploymentStatus(deployment?: Deployment) {
 export default function ProjectsScreen() {
   const [query, setQuery] = useState("");
   const [refreshing, setRefreshing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState("");
   const projectState = useCachedData<ProjectData>(
     "deplo.mobile.projects-and-deployments",
     isDemoMode ? demoProjectData : { repositories: [], deployments: [] },
@@ -83,8 +84,17 @@ export default function ProjectsScreen() {
 
   async function refresh() {
     setRefreshing(true);
-    await projectState.refresh();
-    setRefreshing(false);
+    setSyncMessage("");
+    try {
+      if (!isDemoMode) await syncRepositories();
+      await projectState.refresh();
+      setSyncMessage("GitHub repositories are up to date.");
+    } catch (error) {
+      setSyncMessage(error instanceof Error ? error.message : "Could not sync GitHub repositories.");
+      await projectState.refresh();
+    } finally {
+      setRefreshing(false);
+    }
   }
 
   return (
@@ -110,6 +120,12 @@ export default function ProjectsScreen() {
             className="flex-1 py-3 pl-2.5 font-mono text-[13px] text-deplo-black"
           />
         </View>
+
+        <Pressable accessibilityRole="button" disabled={refreshing} onPress={() => void refresh()} className="mx-5 mb-4 flex-row items-center justify-center gap-2 border border-deplo-black bg-white px-4 py-3">
+          <RefreshCw size={14} strokeWidth={1.8} color="#111111" />
+          <Text className="font-mono text-[11px] font-bold uppercase text-deplo-black">{refreshing ? "Syncing GitHub…" : "Sync GitHub repositories"}</Text>
+        </Pressable>
+        {syncMessage ? <Text className="mx-5 mb-3 text-[11px] text-slate-500">{syncMessage}</Text> : null}
 
         <View className="mx-5 border border-slate-200 bg-white">
           {filtered.map((project, index) => (
@@ -149,8 +165,11 @@ export default function ProjectsScreen() {
                   ? "Fetching repositories and deployment status from Deplo."
                   : projectState.unavailable
                     ? projectState.error ?? "Pull to refresh and try again."
-                    : "Try another repository name or clear the search."}
+                    : query
+                      ? "Try another repository name or clear the search."
+                      : "Sync your GitHub repositories to import a project and deploy it."}
               </Text>
+              {!projectState.loading && !projectState.unavailable && !query ? <Pressable accessibilityRole="button" onPress={() => void refresh()} className="mt-4 border border-deplo-black bg-deplo-black px-4 py-3"><Text className="font-mono text-[11px] font-bold uppercase text-white">Sync repositories</Text></Pressable> : null}
             </View>
           ) : null}
         </View>

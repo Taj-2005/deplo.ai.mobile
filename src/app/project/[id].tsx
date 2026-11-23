@@ -179,14 +179,18 @@ export default function ProjectDetailScreen() {
 
         <Pressable
           accessibilityRole="button"
-          onPress={() => latestDeployment
-            ? router.push(`/deployments/${latestDeployment.id}`)
-            : undefined}
-          disabled={!latestDeployment}
+          onPress={() => router.push(`/configure/${id}`)}
           className="mx-5 mt-5 items-center border border-deplo-black bg-deplo-black px-4 py-4"
         >
-          <Text className="font-mono text-[13px] font-bold text-white">View latest deployment</Text>
+          <Text className="font-mono text-[13px] font-bold text-white">Configure and deploy</Text>
         </Pressable>
+        {latestDeployment ? <Pressable
+          accessibilityRole="button"
+          onPress={() => router.push(`/deployments/${latestDeployment.id}`)}
+          className="mx-5 mt-3 items-center border border-slate-300 bg-white px-4 py-4"
+        >
+          <Text className="font-mono text-[13px] font-bold text-slate-700">View latest deployment</Text>
+        </Pressable> : null}
         <Pressable
           accessibilityRole="button"
           onPress={() => router.push(`/monitoring/${id}`)}

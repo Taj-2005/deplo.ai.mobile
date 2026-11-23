@@ -169,6 +169,25 @@ export async function fetchRepositories() {
   return apiFetch<import("@/lib/deplo-api").Repository[]>("/api/v1/repos");
 }
 
+export interface RepositoryAnalysis {
+  stack: {
+    frontend: string | null;
+    backend: string | null;
+    frontendPath: string;
+    backendPath: string;
+    buildCommand: string | null;
+    packageManager: string;
+  };
+  envVars: Array<{ key: string; value: string; isRequired: boolean; source: string }>;
+  defaultBranch: string;
+}
+
+export async function analyzeRepository(repositoryId: string) {
+  return apiFetch<RepositoryAnalysis>(
+    `/api/v1/repos/${encodeURIComponent(repositoryId)}/analyze`,
+  );
+}
+
 export async function syncRepositories() {
   return apiFetch<{ synced: number }>("/api/v1/repos/sync", { method: "POST" });
 }
