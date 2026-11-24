@@ -3,6 +3,8 @@ export interface CacheEnvelope<T> {
   updatedAt: string;
 }
 
+export type UnavailableReason = "offline" | "unauthorized" | "error" | null;
+
 export interface DataState<T> {
   data: T | null;
   updatedAt: string | null;
@@ -10,4 +12,5 @@ export interface DataState<T> {
   stale: boolean;
   unavailable: boolean;
   error: string | null;
+  reason: UnavailableReason;
 }

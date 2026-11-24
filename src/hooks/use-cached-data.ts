@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { DataState } from "@/types/cache";
 import { readCache, writeCache } from "@/lib/cache";
 import { getConnectivity } from "@/lib/connectivity";
+import { ApiError } from "@/lib/api";
 
 export function useCachedData<T>(
   key: string,
@@ -9,7 +10,9 @@ export function useCachedData<T>(
   loader: () => Promise<T>,
 ) {
   const optionsRef = useRef({ fallback, loader });
-  optionsRef.current = { fallback, loader };
+  useEffect(() => {
+    optionsRef.current = { fallback, loader };
+  });
   const [state, setState] = useState<DataState<T>>({
     data: fallback,
     updatedAt: null,
@@ -17,6 +20,7 @@ export function useCachedData<T>(
     stale: true,
     unavailable: false,
     error: null,
+    reason: null,
   });
 
   const refresh = useCallback(async () => {
@@ -36,6 +40,7 @@ export function useCachedData<T>(
         stale: true,
         unavailable: false,
         error: null,
+        reason: null,
       });
     }
 
@@ -47,6 +52,7 @@ export function useCachedData<T>(
         stale: true,
         unavailable: true,
         error: "Offline",
+        reason: "offline",
       });
       return;
     }
@@ -61,15 +67,22 @@ export function useCachedData<T>(
         stale: false,
         unavailable: false,
         error: null,
+        reason: null,
       });
     } catch (error) {
+      const isAuthError = error instanceof ApiError && error.status === 401;
       setState({
         data: cached?.value ?? currentFallback,
         updatedAt: cached?.updatedAt ?? null,
         loading: false,
         stale: true,
         unavailable: true,
-        error: error instanceof Error ? error.message : "Unable to reach Deplo.",
+        error: isAuthError
+          ? "Sign in again to continue."
+          : error instanceof Error
+            ? error.message
+            : "Unable to reach Deplo.",
+        reason: isAuthError ? "unauthorized" : "error",
       });
     }
   }, [key]);

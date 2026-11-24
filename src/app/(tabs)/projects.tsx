@@ -176,7 +176,13 @@ export default function ProjectsScreen() {
           {filtered.length === 0 ? (
             <View className="items-center px-5 py-10">
               <Text className="text-[14px] font-bold text-deplo-black">
-                {projectState.loading ? "Loading repositories…" : projectState.unavailable ? "Projects could not be loaded" : "No projects match"}
+                {projectState.loading
+                  ? "Loading repositories…"
+                  : projectState.reason === "unauthorized"
+                    ? "Sign in required"
+                    : projectState.unavailable
+                      ? "Projects could not be loaded"
+                      : "No projects match"}
               </Text>
               <Text className="mt-1 text-center text-[12px] text-slate-500">
                 {projectState.loading

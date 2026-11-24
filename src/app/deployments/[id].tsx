@@ -1,10 +1,10 @@
 import { useMemo, useState } from "react";
-import { Alert, Pressable, ScrollView, Text, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import * as Clipboard from "expo-clipboard";
 import { router, useLocalSearchParams } from "expo-router";
 import { AlertTriangle, ArrowLeft, Copy, ExternalLink, RefreshCw, RotateCcw } from "lucide-react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { ActionSheet } from "@/components/action-sheet";
+import { useAppAlert } from "@/components/app-alert";
 import { StatusPill } from "@/components/status-pill";
 import { deploymentLogs, getDeployment } from "@/lib/mobile-data";
 import { redeployRepository, fetchDeployment, cancelDeployment } from "@/lib/api";
@@ -65,10 +65,8 @@ export default function DeploymentDetailScreen() {
     },
   );
   const deployment = deploymentState.data;
+  const appAlert = useAppAlert();
   const [stage, setStage] = useState<"All" | "Install" | "Build" | "Deploy">("All");
-  const [retryVisible, setRetryVisible] = useState(false);
-  const [redeployVisible, setRedeployVisible] = useState(false);
-  const [cancelVisible, setCancelVisible] = useState(false);
   const [actionResult, setActionResult] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionPending, setActionPending] = useState(false);
@@ -106,7 +104,6 @@ export default function DeploymentDetailScreen() {
 
   async function confirmRetry() {
     if (!deployment || actionPending) return;
-    setRetryVisible(false);
     setActionPending(true);
     setActionError(null);
     try {
@@ -126,7 +123,6 @@ export default function DeploymentDetailScreen() {
 
   async function confirmRedeploy() {
     if (!deployment) return;
-    setRedeployVisible(false);
     setActionPending(true);
     setActionError(null);
     try {
@@ -146,7 +142,6 @@ export default function DeploymentDetailScreen() {
 
   async function confirmCancel() {
     if (!deployment || actionPending) return;
-    setCancelVisible(false);
     setActionPending(true);
     setActionError(null);
     try {
@@ -164,11 +159,43 @@ export default function DeploymentDetailScreen() {
     }
   }
 
+  async function handleRetryPress() {
+    if (!deployment) return;
+    const confirmed = await appAlert.confirm({
+      title: "Retry deployment?",
+      description: `Run deployment ${deployment.id} again with the same commit and environment configuration.`,
+      confirmLabel: "Retry deployment",
+    });
+    if (confirmed) await confirmRetry();
+  }
+
+  async function handleRedeployPress() {
+    if (!deployment) return;
+    const confirmed = await appAlert.confirm({
+      title: "Redeploy project?",
+      description: `Create a new deployment for ${deployment.repository}${deployment.commit ? ` at commit ${deployment.commit}` : ""}. This changes production state.`,
+      confirmLabel: "Redeploy project",
+      destructive: true,
+    });
+    if (confirmed) await confirmRedeploy();
+  }
+
+  async function handleCancelPress() {
+    if (!deployment) return;
+    const confirmed = await appAlert.confirm({
+      title: "Cancel deployment?",
+      description: `Stop deployment ${deployment.id}. Terminal or completed deployments cannot be cancelled.`,
+      confirmLabel: "Cancel deployment",
+      destructive: true,
+    });
+    if (confirmed) await confirmCancel();
+  }
+
   async function copyBuildLog() {
     await Clipboard.setStringAsync(logs.map((line) =>
       `${line.timestamp} [${line.stage}] ${line.message}`,
     ).join("\n"));
-    Alert.alert("Copied", "The filtered build log is on the clipboard.");
+    void appAlert.notify("Copied", "The filtered build log is on the clipboard.");
   }
 
   return (
@@ -241,7 +268,7 @@ export default function DeploymentDetailScreen() {
         <View className="mx-5 flex-row gap-3">
           <Pressable
             accessibilityRole="button"
-            onPress={() => setRetryVisible(true)}
+            onPress={() => void handleRetryPress()}
             className="flex-1 flex-row items-center justify-center gap-2 border border-deplo-black bg-deplo-black py-3.5"
           >
             <RefreshCw size={14} strokeWidth={1.8} className="text-white" />
@@ -249,7 +276,7 @@ export default function DeploymentDetailScreen() {
           </Pressable>
           <Pressable
             accessibilityRole="button"
-            onPress={() => setRedeployVisible(true)}
+            onPress={() => void handleRedeployPress()}
             className="flex-1 flex-row items-center justify-center gap-2 border border-slate-300 bg-white py-3.5"
           >
             <RotateCcw size={14} strokeWidth={1.8} className="text-slate-600" />
@@ -262,7 +289,7 @@ export default function DeploymentDetailScreen() {
           deployment.status !== "CANCELLED" ? (
           <Pressable
             accessibilityRole="button"
-            onPress={() => setCancelVisible(true)}
+            onPress={() => void handleCancelPress()}
             className="mx-5 mt-3 items-center border border-red-200 bg-red-50 px-4 py-3.5"
           >
             <Text className="font-mono text-[12px] font-bold text-red-700">Cancel deployment</Text>
@@ -355,33 +382,6 @@ export default function DeploymentDetailScreen() {
           </View>
         </View>
       </ScrollView>
-
-      <ActionSheet
-        visible={retryVisible}
-        title="Retry deployment?"
-        description={`Run deployment ${deployment.id} again with the same commit and environment configuration.`}
-        confirmLabel="Retry deployment"
-        onCancel={() => setRetryVisible(false)}
-        onConfirm={confirmRetry}
-      />
-      <ActionSheet
-        visible={redeployVisible}
-        title="Redeploy project?"
-        description={`Create a new deployment for ${deployment.repository}${deployment.commit ? ` at commit ${deployment.commit}` : ""}. This changes production state.`}
-        confirmLabel="Redeploy project"
-        destructive
-        onCancel={() => setRedeployVisible(false)}
-        onConfirm={confirmRedeploy}
-      />
-      <ActionSheet
-        visible={cancelVisible}
-        title="Cancel deployment?"
-        description={`Stop deployment ${deployment.id}. Terminal or completed deployments cannot be cancelled.`}
-        confirmLabel="Cancel deployment"
-        destructive
-        onCancel={() => setCancelVisible(false)}
-        onConfirm={confirmCancel}
-      />
     </SafeAreaView>
   );
 }

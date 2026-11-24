@@ -1,14 +1,16 @@
 import { useEffect, useState } from "react";
-import { Alert, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { ArrowLeft, Eye, EyeOff, KeyRound } from "lucide-react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { getDeployment } from "@/lib/mobile-data";
 import { fetchDeployment, provideDeploymentEnv } from "@/lib/api";
 import { isDemoMode } from "@/lib/app-config";
+import { useAppAlert } from "@/components/app-alert";
 
 export default function DeploymentEnvironmentScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const appAlert = useAppAlert();
   const [requiredKeys, setRequiredKeys] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -136,12 +138,12 @@ export default function DeploymentEnvironmentScreen() {
           onPress={async () => {
             const missing = Object.entries(values).filter(([, value]) => !value.trim());
             if (missing.length) {
-              Alert.alert("Required values missing", "Complete all required environment fields.");
+              void appAlert.notify("Required values missing", "Complete all required environment fields.");
               return;
             }
             try {
               if (isDemoMode) {
-                Alert.alert("Demo mode", "Environment values were not sent to a server.");
+                void appAlert.notify("Demo mode", "Environment values were not sent to a server.");
                 router.replace(`/deployments/${id}`);
                 return;
               }
@@ -149,10 +151,10 @@ export default function DeploymentEnvironmentScreen() {
                 id,
                 Object.entries(values).map(([key, value]) => ({ key, value })),
               );
-              Alert.alert("Environment submitted", `Deployment resumed with status ${result.status}.`);
+              void appAlert.notify("Environment submitted", `Deployment resumed with status ${result.status}.`);
               router.replace(`/deployments/${result.deploymentId}`);
             } catch (error) {
-              Alert.alert(
+              void appAlert.notify(
                 "Submission failed",
                 error instanceof Error ? error.message : "Environment values could not be submitted.",
               );

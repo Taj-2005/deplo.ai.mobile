@@ -5,7 +5,9 @@ const DEVICE_ID_KEY = "deplo.mobile.device-id";
 const DEVICE_REGISTRATION_ID_KEY = "deplo.mobile.device-registration-id";
 
 export async function getOrCreateDeviceId(): Promise<string> {
-  const existing = await SecureStore.getItemAsync(DEVICE_ID_KEY);
+  const existing = await SecureStore.getItemAsync(DEVICE_ID_KEY, {
+    keychainService: "ai.deplo.mobile.device",
+  });
   if (existing) return existing;
 
   const random = Array.from({ length: 16 }, () =>

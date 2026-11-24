@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { Bell, Boxes, LayoutDashboard, Settings } from "lucide-react-native";
+import { Bell, Boxes, LayoutDashboard, UserCircle } from "lucide-react-native";
 
 export default function TabsLayout() {
   return (
@@ -46,8 +46,8 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="settings"
         options={{
-          title: "Settings",
-          tabBarIcon: ({ color, size }) => <Settings color={color} size={size} />,
+          title: "Profile",
+          tabBarIcon: ({ color, size }) => <UserCircle color={color} size={size} />,
         }}
       />
     </Tabs>

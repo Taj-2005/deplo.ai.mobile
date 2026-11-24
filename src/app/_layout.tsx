@@ -13,6 +13,7 @@ import { subscribeToAppResume } from "@/lib/auth-lifecycle";
 import { Pressable, Text, View } from "react-native";
 import { authenticateForAppResume } from "@/lib/biometrics";
 import { isDemoMode } from "@/lib/app-config";
+import { AppAlertProvider } from "@/components/app-alert";
 
 export default function RootLayout() {
   const responseSubscription = useRef<Notifications.EventSubscription | null>(null);
@@ -78,43 +79,32 @@ export default function RootLayout() {
     };
   }, []);
 
-  if (!sessionChecked) {
-    return (
-      <SafeAreaProvider>
-        <View className="flex-1 items-center justify-center bg-white">
-          <Text className="font-mono text-[11px] font-bold uppercase tracking-widest text-slate-500">
-            Loading Deplo
-          </Text>
-        </View>
-      </SafeAreaProvider>
-    );
-  }
+  const unlock = async () => {
+    if (await authenticateForAppResume()) setBiometricLocked(false);
+  };
 
-  if (biometricLocked) {
-    const unlock = async () => {
-      if (await authenticateForAppResume()) setBiometricLocked(false);
-    };
-    return (
-      <SafeAreaProvider>
-        <View className="flex-1 items-center justify-center bg-white px-8">
-          <Text className="text-[20px] font-bold text-deplo-black">Deplo is locked</Text>
-          <Text className="mt-2 text-center text-[13px] leading-5 text-slate-500">
-            Unlock this device before returning to deployment controls.
-          </Text>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => void unlock()}
-            className="mt-6 border border-deplo-black bg-deplo-black px-6 py-3.5"
-          >
-            <Text className="font-mono text-[12px] font-bold text-white">Unlock Deplo</Text>
-          </Pressable>
-        </View>
-      </SafeAreaProvider>
-    );
-  }
-
-  return (
-    <SafeAreaProvider>
+  const content = !sessionChecked ? (
+    <View className="flex-1 items-center justify-center bg-white">
+      <Text className="font-mono text-[11px] font-bold uppercase tracking-widest text-slate-500">
+        Loading Deplo
+      </Text>
+    </View>
+  ) : biometricLocked ? (
+    <View className="flex-1 items-center justify-center bg-white px-8">
+      <Text className="text-[20px] font-bold text-deplo-black">Deplo is locked</Text>
+      <Text className="mt-2 text-center text-[13px] leading-5 text-slate-500">
+        Unlock this device before returning to deployment controls.
+      </Text>
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => void unlock()}
+        className="mt-6 border border-deplo-black bg-deplo-black px-6 py-3.5"
+      >
+        <Text className="font-mono text-[12px] font-bold text-white">Unlock Deplo</Text>
+      </Pressable>
+    </View>
+  ) : (
+    <>
       <Stack
         screenOptions={{
           headerShown: false,
@@ -122,6 +112,12 @@ export default function RootLayout() {
         }}
       />
       <StatusBar style="dark" />
+    </>
+  );
+
+  return (
+    <SafeAreaProvider>
+      <AppAlertProvider>{content}</AppAlertProvider>
     </SafeAreaProvider>
   );
 }

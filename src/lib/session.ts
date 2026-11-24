@@ -4,7 +4,9 @@ const SESSION_KEY = "deplo.session.token";
 const BIOMETRIC_KEY = "deplo.security.biometric";
 
 export async function getSessionToken(): Promise<string | null> {
-  return SecureStore.getItemAsync(SESSION_KEY);
+  return SecureStore.getItemAsync(SESSION_KEY, {
+    keychainService: "ai.deplo.mobile.session",
+  });
 }
 
 export async function setSessionToken(token: string): Promise<void> {

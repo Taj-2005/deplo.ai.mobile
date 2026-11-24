@@ -108,7 +108,11 @@ export default function NotificationsScreen() {
           <Text className="font-mono text-[10px] font-bold uppercase tracking-wider text-slate-500">
             {state.stale ? "Saved history" : "Recent activity"}
           </Text>
-          {state.unavailable ? <Text className="font-mono text-[10px] text-amber-700">Offline · may be stale</Text> : null}
+          {state.unavailable ? (
+            <Text className="font-mono text-[10px] text-amber-700">
+              {state.reason === "unauthorized" ? "Sign in required" : state.reason === "offline" ? "Offline · may be stale" : "Server error · may be stale"}
+            </Text>
+          ) : null}
         </View>
         <View className="mx-5 border border-slate-200 bg-white">
           {notifications.map((notification, index) => {

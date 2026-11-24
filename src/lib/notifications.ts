@@ -71,7 +71,16 @@ export async function registerDeviceForPush(): Promise<DeviceRegistration> {
   }
 
   const projectId = Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
-  const pushToken = (await Notifications.getExpoPushTokenAsync(projectId ? { projectId } : undefined)).data;
+  let pushToken: string;
+  try {
+    pushToken = (await Notifications.getExpoPushTokenAsync(projectId ? { projectId } : undefined)).data;
+  } catch {
+    // Getting a push token requires the app's own Firebase/FCM credentials on
+    // Android (Expo retired shared push credentials) — a build without them
+    // throws a raw native error here. Fail the same way "permission not
+    // granted" already does, instead of letting that error reach the UI.
+    return { pushToken: null, platform, deviceName, isPhysicalDevice: Device.isDevice };
+  }
   return syncPushToken(pushToken, platform, deviceName);
 }
 

@@ -1,15 +1,17 @@
 import { useState } from "react";
-import { Alert, Pressable, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { router } from "expo-router";
 import { FolderGit2 } from "lucide-react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { setSessionToken } from "@/lib/session";
 import { isDemoMode } from "@/lib/app-config";
+import { useAppAlert } from "@/components/app-alert";
 import * as WebBrowser from "expo-web-browser";
 import Constants from "expo-constants";
 
 export default function SignInScreen() {
   const [starting, setStarting] = useState(false);
+  const appAlert = useAppAlert();
 
   function startGitHubSignIn() {
     setStarting(true);
@@ -34,7 +36,7 @@ export default function SignInScreen() {
       if (result.type !== "success" || !result.url) {
         setStarting(false);
         if (result.type !== "cancel") {
-          Alert.alert("Sign-in not completed", "GitHub did not return a usable callback.");
+          void appAlert.notify("Sign-in not completed", "GitHub did not return a usable callback.");
         }
         return;
       }
@@ -49,20 +51,20 @@ export default function SignInScreen() {
           router.replace("/onboarding");
           return;
         }
-        Alert.alert(
+        void appAlert.notify(
           "GitHub sign-in failed",
           error === "failed"
             ? "The server could not complete GitHub authentication."
             : "The callback did not include a session token.",
         );
       } catch {
-        Alert.alert("GitHub sign-in failed", "The callback URL could not be read.");
+        void appAlert.notify("GitHub sign-in failed", "The callback URL could not be read.");
       } finally {
         setStarting(false);
       }
     }).catch((error) => {
       setStarting(false);
-      Alert.alert(
+      void appAlert.notify(
         "GitHub sign-in failed",
         error instanceof Error ? error.message : "The browser could not be opened.",
       );

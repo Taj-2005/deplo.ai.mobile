@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   AppState,
   Linking,
   Pressable,
@@ -23,6 +22,7 @@ import { router, useFocusEffect } from "expo-router";
 import { ScreenHeader } from "@/components/screen-header";
 import { StatusPill } from "@/components/status-pill";
 import { UserAvatar } from "@/components/user-avatar";
+import { useAppAlert } from "@/components/app-alert";
 import { clearSession, getBiometricPreference, setBiometricPreference } from "@/lib/session";
 import { authenticateForAppResume, getBiometricStatus } from "@/lib/biometrics";
 import { clearPushRegistration, registerDeviceForPush } from "@/lib/notifications";
@@ -191,7 +191,8 @@ function ProviderCard({
   );
 }
 
-export default function SettingsScreen() {
+export default function ProfileScreen() {
+  const appAlert = useAppAlert();
   const [biometric, setBiometric] = useState(true);
   const [notifications, setNotifications] = useState(true);
   const [account, setAccount] = useState<{
@@ -263,7 +264,7 @@ export default function SettingsScreen() {
     if (enabled) {
       const status = await getBiometricStatus();
       if (!status.compatible || !status.enrolled) {
-        Alert.alert(
+        void appAlert.notify(
           "Biometric lock unavailable",
           "Set up Face ID, Touch ID, or fingerprint unlocking on this device first.",
         );
@@ -285,59 +286,59 @@ export default function SettingsScreen() {
       preferences.enabled = enabled;
       await writeNotificationPreferences(preferences);
       if (registration) {
-        Alert.alert(
+        void appAlert.notify(
           registration.pushToken ? "Push notifications enabled" : "Push notifications unavailable",
           registration.pushToken
             ? `This ${registration.platform} device is registered for Deplo alerts.`
-            : "Allow notification permission or use a physical device to complete registration.",
+            : "Allow notification permission, use a physical device, or check that push is configured for this build.",
         );
       }
     } catch (error) {
       setNotifications(!enabled);
-      Alert.alert(
+      void appAlert.notify(
         "Notification settings not saved",
         error instanceof Error ? error.message : "The server could not update notification settings.",
       );
     }
   }
 
-  function handleSignOut() {
-    Alert.alert("Sign out?", "This will end the session and revoke push access.", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Sign out",
-        style: "destructive",
-        onPress: () => {
-          void Promise.all([getOrCreateDeviceId(), getDeviceRegistrationId()])
-            .then(([localId, registrationId]) => revokeMobileDevice(registrationId ?? localId))
-            .catch(() => undefined)
-            .finally(async () => {
-              await clearPushRegistration();
-              await clearDeviceIdentity();
-              await clearSession();
-              router.replace("/auth/sign-in");
-            });
-        },
-      },
-    ]);
+  async function handleSignOut() {
+    const confirmed = await appAlert.confirm({
+      title: "Sign out?",
+      description: "This will end the session and revoke push access.",
+      confirmLabel: "Sign out",
+      destructive: true,
+    });
+    if (!confirmed) return;
+    await Promise.all([getOrCreateDeviceId(), getDeviceRegistrationId()])
+      .then(([localId, registrationId]) => revokeMobileDevice(registrationId ?? localId))
+      .catch(() => undefined)
+      .finally(async () => {
+        await clearPushRegistration();
+        await clearDeviceIdentity();
+        await clearSession();
+        router.replace("/auth/sign-in");
+      });
   }
 
-  function confirmDeviceRevoke(device: MobileDevice) {
-    Alert.alert(`Revoke ${device.deviceName}?`, "This device will stop receiving Deplo push notifications.", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Revoke device",
-        style: "destructive",
-        onPress: () => {
-          void revokeMobileDevice(device.deviceId)
-            .then(async () => {
-              setDevices((current) => current?.filter((item) => item.deviceId !== device.deviceId) ?? []);
-              if ((await getDeviceRegistrationId()) === device.deviceId) await clearPushRegistration();
-            })
-            .catch((error) => Alert.alert("Could not revoke device", error instanceof Error ? error.message : "The server could not revoke this device."));
-        },
-      },
-    ]);
+  async function confirmDeviceRevoke(device: MobileDevice) {
+    const confirmed = await appAlert.confirm({
+      title: `Revoke ${device.deviceName}?`,
+      description: "This device will stop receiving Deplo push notifications.",
+      confirmLabel: "Revoke device",
+      destructive: true,
+    });
+    if (!confirmed) return;
+    try {
+      await revokeMobileDevice(device.deviceId);
+      setDevices((current) => current?.filter((item) => item.deviceId !== device.deviceId) ?? []);
+      if ((await getDeviceRegistrationId()) === device.deviceId) await clearPushRegistration();
+    } catch (error) {
+      void appAlert.notify(
+        "Could not revoke device",
+        error instanceof Error ? error.message : "The server could not revoke this device.",
+      );
+    }
   }
 
   async function beginVercelConnect() {
@@ -347,27 +348,29 @@ export default function SettingsScreen() {
       const url = await getVercelInstallUrl("integrations");
       await Linking.openURL(url);
     } catch (error) {
-      Alert.alert("Could not open Vercel", error instanceof Error ? error.message : "Try again in a moment.");
+      void appAlert.notify("Could not open Vercel", error instanceof Error ? error.message : "Try again in a moment.");
     } finally {
       setVercelBusy(false);
     }
   }
 
-  function confirmVercelDisconnect() {
-    Alert.alert("Disconnect Vercel?", "Deplo loses access to your Vercel account. Already-deployed projects keep running.", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Disconnect",
-        style: "destructive",
-        onPress: () => {
-          setVercelBusy(true);
-          void disconnectVercel()
-            .then(loadIntegrations)
-            .catch((error) => Alert.alert("Could not disconnect Vercel", error instanceof Error ? error.message : "Try again."))
-            .finally(() => setVercelBusy(false));
-        },
-      },
-    ]);
+  async function confirmVercelDisconnect() {
+    const confirmed = await appAlert.confirm({
+      title: "Disconnect Vercel?",
+      description: "Deplo loses access to your Vercel account. Already-deployed projects keep running.",
+      confirmLabel: "Disconnect",
+      destructive: true,
+    });
+    if (!confirmed) return;
+    setVercelBusy(true);
+    try {
+      await disconnectVercel();
+      await loadIntegrations();
+    } catch (error) {
+      void appAlert.notify("Could not disconnect Vercel", error instanceof Error ? error.message : "Try again.");
+    } finally {
+      setVercelBusy(false);
+    }
   }
 
   function openRenderPanel() {
@@ -385,27 +388,47 @@ export default function SettingsScreen() {
       setRenderPanelOpen(false);
       await loadIntegrations();
     } catch (error) {
-      Alert.alert("Render could not validate this key", error instanceof Error ? error.message : "Check the key and try again.");
+      void appAlert.notify("Render could not validate this key", error instanceof Error ? error.message : "Check the key and try again.");
     } finally {
       setRenderBusy(false);
     }
   }
 
-  function confirmRenderDisconnect() {
-    Alert.alert("Disconnect Render?", "Deplo loses access to your Render workspace. Already-deployed services keep running.", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Disconnect",
-        style: "destructive",
-        onPress: () => {
-          setRenderBusy(true);
-          void disconnectRender()
-            .then(loadIntegrations)
-            .catch((error) => Alert.alert("Could not disconnect Render", error instanceof Error ? error.message : "Try again."))
-            .finally(() => setRenderBusy(false));
-        },
-      },
-    ]);
+  async function confirmRenderDisconnect() {
+    const confirmed = await appAlert.confirm({
+      title: "Disconnect Render?",
+      description: "Deplo loses access to your Render workspace. Already-deployed services keep running.",
+      confirmLabel: "Disconnect",
+      destructive: true,
+    });
+    if (!confirmed) return;
+    setRenderBusy(true);
+    try {
+      await disconnectRender();
+      await loadIntegrations();
+    } catch (error) {
+      void appAlert.notify("Could not disconnect Render", error instanceof Error ? error.message : "Try again.");
+    } finally {
+      setRenderBusy(false);
+    }
+  }
+
+  async function handleDeviceRegistrationPress() {
+    try {
+      const registration = await registerDeviceForPush();
+      void appAlert.notify(
+        registration.pushToken ? "Device registered" : "Device registration unavailable",
+        registration.pushToken
+          ? `${registration.deviceName} is registered for push alerts.`
+          : "Allow notification permission, use a physical device, or check that push is configured for this build.",
+      );
+      if (!isDemoMode) void fetchMobileDevices().then(setDevices).catch(() => undefined);
+    } catch (error) {
+      void appAlert.notify(
+        "Device registration failed",
+        error instanceof Error ? error.message : "The server could not register this device.",
+      );
+    }
   }
 
   return (
@@ -413,12 +436,12 @@ export default function SettingsScreen() {
       <ScrollView contentContainerStyle={{ paddingBottom: 28 }} showsVerticalScrollIndicator={false}>
         <ScreenHeader
           eyebrow="Account"
-          title="Settings"
-          description="Manage your profile, deployment providers, and alerts."
+          title="Profile"
+          description="Your identity, deployment providers, and device settings."
         />
 
         <View className="mx-5 flex-row items-center gap-3 border border-slate-200 bg-white p-4">
-          <UserAvatar avatarUrl={account?.avatarUrl} name={account?.name} size={44} />
+          <UserAvatar avatarUrl={account?.avatarUrl} name={account?.name} size={48} />
           <View className="flex-1">
             <Text className="text-[15px] font-bold text-deplo-black">
               {account?.name ?? "Session account"}
@@ -426,6 +449,9 @@ export default function SettingsScreen() {
             <Text className="mt-0.5 font-mono text-[11px] text-slate-500">
               {account?.githubLogin ? `@${account.githubLogin}` : account?.email ?? "Verify session to load profile"}
             </Text>
+            {account?.email ? (
+              <Text className="mt-0.5 text-[11px] text-slate-400">{account.email}</Text>
+            ) : null}
           </View>
           <Pressable
             accessibilityRole="link"
@@ -435,12 +461,6 @@ export default function SettingsScreen() {
             <ChevronRight size={16} strokeWidth={1.8} className="text-slate-400" />
           </Pressable>
         </View>
-        {account?.email ? (
-          <View className="mx-5 mt-px border border-t-0 border-slate-200 bg-white px-4 py-3">
-            <Text className="font-mono text-[10px] uppercase text-slate-400">Email</Text>
-            <Text className="mt-0.5 text-[12px] text-slate-600">{account.email}</Text>
-          </View>
-        ) : null}
 
         <SectionLabel>Deployment providers</SectionLabel>
         <View className="mx-5 border border-slate-200 bg-white">
@@ -451,7 +471,7 @@ export default function SettingsScreen() {
             integration={vercel}
             busy={vercelBusy}
             onConnect={() => void beginVercelConnect()}
-            onDisconnect={confirmVercelDisconnect}
+            onDisconnect={() => void confirmVercelDisconnect()}
             manageUrl="https://vercel.com/dashboard"
           />
           <ProviderCard
@@ -461,7 +481,7 @@ export default function SettingsScreen() {
             integration={render}
             busy={renderBusy}
             onConnect={openRenderPanel}
-            onDisconnect={confirmRenderDisconnect}
+            onDisconnect={() => void confirmRenderDisconnect()}
             manageUrl="https://dashboard.render.com"
           />
           {render?.connected ? (
@@ -523,7 +543,7 @@ export default function SettingsScreen() {
           <Text className="mx-5 mt-2 text-[11px] text-red-600">{integrationsError}</Text>
         ) : null}
 
-        <SectionLabel>Device and alerts</SectionLabel>
+        <SectionLabel>Settings</SectionLabel>
         <View className="mx-5 border border-slate-200 bg-white">
           <SettingRow
             label="Push notifications"
@@ -556,24 +576,7 @@ export default function SettingsScreen() {
             description={devices === null ? "This phone · Registration status" : `${devices.length} registered device${devices.length === 1 ? "" : "s"}`}
             icon={<Smartphone size={16} strokeWidth={1.7} className="text-slate-600" />}
             trailing={<ChevronRight size={16} strokeWidth={1.7} className="text-slate-400" />}
-            onPress={() => void registerDeviceForPush()
-              .then((registration) => {
-                Alert.alert(
-                  registration.pushToken ? "Device registered" : "Device registration unavailable",
-                  registration.pushToken
-                    ? `${registration.deviceName} is registered for push alerts.`
-                    : "Allow notification permission or use a physical device.",
-                );
-                if (!isDemoMode) void fetchMobileDevices().then(setDevices).catch(() => undefined);
-              })
-              .catch((error) => Alert.alert("Device registration failed", error instanceof Error ? error.message : "The server could not register this device."))}
-          />
-          <SettingRow
-            label="Sign out"
-            description="End this session and revoke push access"
-            icon={<LogOut size={16} strokeWidth={1.7} className="text-red-600" />}
-            trailing={<ChevronRight size={16} strokeWidth={1.7} className="text-slate-400" />}
-            onPress={handleSignOut}
+            onPress={() => void handleDeviceRegistrationPress()}
           />
         </View>
 
@@ -588,13 +591,23 @@ export default function SettingsScreen() {
                   <Text className="text-[12px] font-bold text-deplo-black">{device.deviceName}{device.deviceId === currentDeviceId ? " · This device" : ""}</Text>
                   <Text className="mt-0.5 font-mono text-[10px] uppercase text-slate-500">{device.platform}</Text>
                 </View>
-                <Pressable accessibilityRole="button" onPress={() => confirmDeviceRevoke(device)} className="border border-red-200 px-3 py-2">
+                <Pressable accessibilityRole="button" onPress={() => void confirmDeviceRevoke(device)} className="border border-red-200 px-3 py-2">
                   <Text className="font-mono text-[10px] font-bold uppercase text-red-700">Revoke</Text>
                 </Pressable>
               </View>
             ))}
           </View>
         ) : null}
+
+        <View className="mx-5 mt-5 border border-slate-200 bg-white">
+          <SettingRow
+            label="Sign out"
+            description="End this session and revoke push access"
+            icon={<LogOut size={16} strokeWidth={1.7} className="text-red-600" />}
+            trailing={<ChevronRight size={16} strokeWidth={1.7} className="text-slate-400" />}
+            onPress={() => void handleSignOut()}
+          />
+        </View>
 
         <Text className="mt-6 text-center font-mono text-[10px] text-slate-400">
           DEPLO MOBILE · VERSION 1.0.0
