@@ -240,11 +240,15 @@ export async function fetchIntegrations() {
   return result.integrations;
 }
 
-export async function getVercelInstallUrl() {
+export async function getVercelInstallUrl(returnTo: "onboarding" | "integrations" = "onboarding") {
   const result = await apiFetch<{ url: string }>(
-    "/api/v1/integrations/vercel/install-url?returnTo=onboarding",
+    `/api/v1/integrations/vercel/install-url?returnTo=${returnTo}`,
   );
   return result.url;
+}
+
+export async function disconnectVercel() {
+  await apiFetch<void>("/api/v1/integrations/vercel", { method: "DELETE" });
 }
 
 export async function connectRender(apiKey: string) {
@@ -252,4 +256,8 @@ export async function connectRender(apiKey: string) {
     "/api/v1/integrations/render",
     { method: "POST", body: JSON.stringify({ apiKey }) },
   );
+}
+
+export async function disconnectRender() {
+  await apiFetch<void>("/api/v1/integrations/render", { method: "DELETE" });
 }

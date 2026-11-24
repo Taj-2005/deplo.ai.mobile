@@ -1,18 +1,30 @@
 import { useState } from "react";
 import { Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
 import { router } from "expo-router";
-import { Activity, AlertTriangle, CheckCircle2, Cloud, Server } from "lucide-react-native";
+import { Activity, AlertTriangle, ArrowRight, Boxes, CheckCircle2, Cloud, Server } from "lucide-react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MetricCard } from "@/components/metric-card";
 import { ScreenHeader } from "@/components/screen-header";
 import { StatusPill } from "@/components/status-pill";
 import { useCachedData } from "@/hooks/use-cached-data";
-import { fetchDeployments } from "@/lib/api";
+import { fetchDeployments, fetchRepositories } from "@/lib/api";
 import type { Deployment } from "@/types/deplo";
-import { deployments as fixtureDeployments } from "@/lib/mobile-data";
-import type { Deployment as ApiDeployment } from "@/lib/deplo-api";
+import { deployments as fixtureDeployments, projects as demoProjects } from "@/lib/mobile-data";
+import type { Deployment as ApiDeployment, Repository } from "@/lib/deplo-api";
 import { isDemoMode } from "@/lib/app-config";
 import { DemoBanner } from "@/components/demo-banner";
+
+const demoRepositories: Repository[] = demoProjects.map((project) => ({
+  id: project.id,
+  name: project.name,
+  fullName: project.repository,
+  isPrivate: project.private,
+  defaultBranch: project.branch,
+  updatedAt: "",
+  language: null,
+  description: null,
+  url: `https://github.com/${project.repository}`,
+}));
 
 const activeStatuses = new Set(["PENDING", "ANALYZING", "DEPLOYING_BACKEND", "BACKEND_READY", "DEPLOYING_FRONTEND"]);
 
@@ -60,6 +72,12 @@ export default function OverviewScreen() {
       ? async () => fixtureDeployments
       : async () => (await fetchDeployments()).map(toMobileDeployment),
   );
+  const repositories = useCachedData<Repository[]>(
+    "deplo.mobile.overview.repositories.v1",
+    isDemoMode ? demoRepositories : [],
+    isDemoMode ? async () => demoRepositories : fetchRepositories,
+  );
+  const repoCount = repositories.data?.length ?? 0;
   const deploymentRows = [...(overview.data ?? [])].sort(
     (a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime(),
   );
@@ -74,7 +92,7 @@ export default function OverviewScreen() {
 
   async function refresh() {
     setRefreshing(true);
-    await overview.refresh();
+    await Promise.all([overview.refresh(), repositories.refresh()]);
     setRefreshing(false);
   }
 
@@ -131,7 +149,9 @@ export default function OverviewScreen() {
 
         <View className="mx-5 mt-5 flex-row gap-3">
           <MetricCard label="Active" value={String(activeCount)} detail="Deployments running" icon={Activity} />
-          <MetricCard label="Loaded" value={String(deploymentRows.length)} detail="Recent deployments" icon={Server} />
+          <Pressable accessibilityRole="button" onPress={() => router.push("/projects")} className="flex-1">
+            <MetricCard label="Projects" value={String(repoCount)} detail="Synced repositories" icon={Boxes} />
+          </Pressable>
         </View>
 
         <View className="mx-5 mt-7">
@@ -165,8 +185,30 @@ export default function OverviewScreen() {
               </Pressable>
             );})}
             {deploymentRows.length === 0 ? (
-              <View className="p-4">
-                <Text className="text-[13px] text-slate-500">No deployment data is available yet.</Text>
+              <View className="items-center px-5 py-10">
+                <Server size={22} strokeWidth={1.6} className="text-slate-400" />
+                <Text className="mt-3 text-[14px] font-bold text-deplo-black">
+                  {overview.loading ? "Loading deployments…" : repoCount === 0 ? "No repositories synced yet" : "No deployments yet"}
+                </Text>
+                <Text className="mt-1 text-center text-[12px] leading-5 text-slate-500">
+                  {overview.loading
+                    ? "Fetching deployment status from Deplo."
+                    : repoCount === 0
+                      ? "Connect a GitHub repository from Projects to deploy your first app."
+                      : `You have ${repoCount} repositor${repoCount === 1 ? "y" : "ies"} synced. Deploy one to see it here.`}
+                </Text>
+                {!overview.loading ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => router.push("/projects")}
+                    className="mt-4 flex-row items-center gap-2 border border-deplo-black bg-deplo-black px-4 py-3"
+                  >
+                    <Text className="font-mono text-[11px] font-bold uppercase text-white">
+                      {repoCount === 0 ? "Sync repositories" : "Go to projects"}
+                    </Text>
+                    <ArrowRight size={13} strokeWidth={2} color="#FFFFFF" />
+                  </Pressable>
+                ) : null}
               </View>
             ) : null}
           </View>

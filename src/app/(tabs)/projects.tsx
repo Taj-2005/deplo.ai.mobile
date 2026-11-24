@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Pressable, RefreshControl, ScrollView, Text, TextInput, View } from "react-native";
 import { router } from "expo-router";
-import { Boxes, FolderGit2, Lock, RefreshCw, Search } from "lucide-react-native";
+import { Boxes, FolderGit2, Lock, RefreshCw, Search, Server } from "lucide-react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ScreenHeader } from "@/components/screen-header";
 import { StatusPill } from "@/components/status-pill";
@@ -76,6 +76,8 @@ export default function ProjectsScreen() {
       status: status.label,
       tone: status.tone,
       id: project.id,
+      hasFrontend: Boolean(latestDeployment?.frontendUrl),
+      hasBackend: Boolean(latestDeployment?.backendUrl),
     };
   });
   const filtered = normalizedProjects.filter((project) =>
@@ -130,7 +132,7 @@ export default function ProjectsScreen() {
         <View className="mx-5 border border-slate-200 bg-white">
           {filtered.map((project, index) => (
             <Pressable
-              key={project.owner}
+              key={project.id}
               accessibilityRole="button"
               onPress={() => router.push(`/project/${project.id}`)}
               className={`flex-row items-center gap-3 p-4 ${index > 0 ? "border-t border-slate-200" : ""}`}
@@ -150,6 +152,22 @@ export default function ProjectsScreen() {
                 <Text className="mt-1 font-mono text-[11px] text-slate-500">
                   {project.owner} · {project.branch}
                 </Text>
+                {project.hasFrontend || project.hasBackend ? (
+                  <View className="mt-1.5 flex-row items-center gap-2">
+                    {project.hasFrontend ? (
+                      <View className="flex-row items-center gap-1">
+                        <Text className="text-[9px] font-black text-slate-500">▲</Text>
+                        <Text className="font-mono text-[9px] uppercase text-slate-500">Vercel</Text>
+                      </View>
+                    ) : null}
+                    {project.hasBackend ? (
+                      <View className="flex-row items-center gap-1">
+                        <Server size={9} strokeWidth={2} className="text-slate-500" />
+                        <Text className="font-mono text-[9px] uppercase text-slate-500">Render</Text>
+                      </View>
+                    ) : null}
+                  </View>
+                ) : null}
               </View>
               <StatusPill label={project.status} tone={project.tone} />
             </Pressable>
