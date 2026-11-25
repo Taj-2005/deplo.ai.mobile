@@ -13,6 +13,7 @@ import { subscribeToAppResume } from "@/lib/auth-lifecycle";
 import { Pressable, Text, View } from "react-native";
 import { authenticateForAppResume } from "@/lib/biometrics";
 import { isDemoMode } from "@/lib/app-config";
+import { BrandLoader } from "@/components/brand-loader";
 import { AppAlertProvider } from "@/components/app-alert";
 
 export default function RootLayout() {
@@ -85,9 +86,7 @@ export default function RootLayout() {
 
   const content = !sessionChecked ? (
     <View className="flex-1 items-center justify-center bg-white">
-      <Text className="font-mono text-[11px] font-bold uppercase tracking-widest text-slate-500">
-        Loading Deplo
-      </Text>
+      <BrandLoader label="Loading Deplo" />
     </View>
   ) : biometricLocked ? (
     <View className="flex-1 items-center justify-center bg-white px-8">

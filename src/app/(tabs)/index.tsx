@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
 import { router } from "expo-router";
-import { Activity, AlertTriangle, ArrowRight, Boxes, CheckCircle2, Cloud, Server } from "lucide-react-native";
+import { Activity, AlertTriangle, ArrowRight, Boxes, CheckCircle2, ChevronRight, Server } from "lucide-react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MetricCard } from "@/components/metric-card";
 import { ScreenHeader } from "@/components/screen-header";
@@ -89,6 +89,13 @@ export default function OverviewScreen() {
   const hasAttention = attentionCount > 0;
   const hasData = deploymentRows.length > 0;
   const bannerTone = hasAttention ? "danger" : hasData ? "success" : "neutral";
+  const statusCaption = overview.unavailable
+    ? overview.error ?? "Server unavailable"
+    : overview.loading
+      ? "Refreshing…"
+      : overview.updatedAt
+        ? `Updated ${new Date(overview.updatedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`
+        : "Status unavailable";
 
   async function refresh() {
     setRefreshing(true);
@@ -105,11 +112,16 @@ export default function OverviewScreen() {
         contentContainerStyle={{ paddingBottom: 28 }}
         showsVerticalScrollIndicator={false}
       >
-        <ScreenHeader
-          eyebrow="Workspace / Deployment overview"
-          title="Deployment health"
-          description="Recent deployment status from your Deplo workspace."
-        />
+        <View className="flex-row items-center gap-2 px-5 pt-4">
+          <View className="h-7 w-7 items-center justify-center rounded-full bg-deplo-black">
+            <Text className="text-[12px] font-bold text-white">D</Text>
+          </View>
+          <Text className="font-mono text-[11px] font-bold uppercase tracking-widest text-deplo-black">
+            Deplo
+          </Text>
+        </View>
+
+        <ScreenHeader eyebrow="Overview" title="Deployment health" description="Your workspace at a glance." />
         <DemoBanner />
 
         <View className={`mx-5 mb-5 border p-4 ${bannerTone === "danger" ? "border-red-200 bg-red-50" : bannerTone === "success" ? "border-green-200 bg-green-50" : "border-slate-200 bg-slate-50"}`}>
@@ -128,36 +140,57 @@ export default function OverviewScreen() {
           <Text className={`mt-1.5 text-[12px] leading-5 ${bannerTone === "danger" ? "text-red-700" : bannerTone === "success" ? "text-green-700" : "text-slate-600"}`}>
             {!hasData ? "Pull to refresh when deployment data is available." : overview.stale ? "This is the last available deployment data; refresh when connected." : "This summary reflects the deployments currently available in the workspace."}
           </Text>
+
+          {hasData ? (
+            <View
+              className={`mt-3 flex-row border-t pt-3 ${bannerTone === "danger" ? "border-red-200" : bannerTone === "success" ? "border-green-200" : "border-slate-200"}`}
+            >
+              <View className="flex-1 flex-row items-center gap-1.5">
+                <CheckCircle2 size={14} strokeWidth={2} className="text-green-700" />
+                <Text className="font-mono text-[11px] text-slate-600">
+                  <Text className="font-bold text-deplo-black">{completedCount}</Text> succeeded
+                </Text>
+              </View>
+              <View className="flex-1 flex-row items-center gap-1.5">
+                <AlertTriangle size={14} strokeWidth={2} className="text-red-700" />
+                <Text className="font-mono text-[11px] text-slate-600">
+                  <Text className="font-bold text-deplo-black">{attentionCount}</Text> need attention
+                </Text>
+              </View>
+            </View>
+          ) : null}
         </View>
 
         <View className="mx-5 flex-row gap-3">
-          <MetricCard
-            label="Success"
-            value={String(completedCount)}
-            detail="Completed in this list"
-            icon={Cloud}
-            tone="success"
-          />
-          <MetricCard
-            label="Attention"
-            value={String(attentionCount)}
-            detail="Failed or waiting for setup"
-            icon={AlertTriangle}
-            tone="danger"
-          />
-        </View>
-
-        <View className="mx-5 mt-5 flex-row gap-3">
           <MetricCard label="Active" value={String(activeCount)} detail="Deployments running" icon={Activity} />
           <Pressable accessibilityRole="button" onPress={() => router.push("/projects")} className="flex-1">
-            <MetricCard label="Projects" value={String(repoCount)} detail="Synced repositories" icon={Boxes} />
+            <View className="min-h-28 flex-1 justify-between border border-slate-200 bg-white p-4">
+              <View className="flex-row items-center justify-between">
+                <Text className="font-mono text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                  Projects
+                </Text>
+                <Boxes size={16} strokeWidth={1.7} className="text-slate-600" />
+              </View>
+              <View>
+                <Text className="text-[26px] font-bold tracking-tight text-deplo-black">{repoCount}</Text>
+                <View className="mt-1 flex-row items-center gap-0.5">
+                  <Text className="text-[11px] font-semibold text-deplo-cyan">View all</Text>
+                  <ChevronRight size={12} strokeWidth={2.4} className="text-deplo-cyan" />
+                </View>
+              </View>
+            </View>
           </Pressable>
         </View>
 
         <View className="mx-5 mt-7">
-          <View className="mb-3 flex-row items-center justify-between">
+          <View className="mb-3 flex-row items-end justify-between">
             <Text className="text-[15px] font-bold text-deplo-black">Recent deployments</Text>
-            <Text className="font-mono text-[11px] text-slate-500">{deploymentRows.length} total</Text>
+            <View className="items-end">
+              <Text className="font-mono text-[10px] uppercase tracking-wider text-slate-500">
+                {deploymentRows.length} total
+              </Text>
+              <Text className="mt-0.5 text-[10px] text-slate-400">{statusCaption}</Text>
+            </View>
           </View>
 
           <View className="border border-slate-200 bg-white">
@@ -212,21 +245,6 @@ export default function OverviewScreen() {
               </View>
             ) : null}
           </View>
-        </View>
-
-        <View className="mx-5 mt-5 border border-slate-200 bg-white p-4">
-          <Text className="font-mono text-[10px] font-bold uppercase tracking-wider text-slate-500">
-            Last updated
-          </Text>
-          <Text className="mt-1 text-[12px] text-slate-600">
-            {overview.unavailable
-              ? `${overview.error ?? "Server unavailable"} · Status may be stale`
-              : overview.loading
-                ? "Refreshing from Deplo"
-                : overview.updatedAt
-                  ? `Updated ${new Date(overview.updatedAt).toLocaleTimeString()}`
-                  : "Status unavailable"}
-          </Text>
         </View>
       </ScrollView>
     </SafeAreaView>
