@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "448521762948",
+    "project_id": "deplo-ai-mobile",
+    "storage_bucket": "deplo-ai-mobile.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:448521762948:android:d08f5252ccd480bb29aad1",
+        "android_client_info": {
+          "package_name": "ai.deplo.mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDqpz9URd-QjJf2CfCUhu95tOOmGPKtNR0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

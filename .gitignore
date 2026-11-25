@@ -18,6 +18,10 @@ expo-env.d.ts
 *.key
 *.mobileprovision
 
+# Firebase Admin SDK service account key — secret, never commit.
+# google-services.json is fine to commit (public identifiers only).
+*firebase-adminsdk*.json
+
 # Metro
 .metro-health-check*
 
