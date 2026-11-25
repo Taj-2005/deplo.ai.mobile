@@ -67,19 +67,15 @@ export function BrandLoader({ label }: { label?: string }) {
             transform: [{ scale: reduceMotion ? 1 : violetRingScale }],
           }}
         />
-        <Animated.View
+        <Animated.Image
+          source={require("../../assets/icon.png")}
+          resizeMode="contain"
           style={{
-            height: 48,
-            width: 48,
-            borderRadius: 24,
-            backgroundColor: "#0A0A0A",
-            alignItems: "center",
-            justifyContent: "center",
+            height: 52,
+            width: 52,
             transform: [{ scale: reduceMotion ? 1 : badgeScale }],
           }}
-        >
-          <Text style={{ fontSize: 18, fontWeight: "700", color: "#FFFFFF" }}>D</Text>
-        </Animated.View>
+        />
       </View>
       {label ? (
         <Text className="mt-3 font-mono text-[11px] font-bold uppercase tracking-widest text-slate-500">

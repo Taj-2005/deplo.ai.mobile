@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, AppState, Linking, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, AppState, Image, Linking, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import { ArrowUpRight, Check, ChevronRight, GitBranch, RefreshCw, Server, TriangleAlert } from "lucide-react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -88,7 +88,7 @@ export default function OnboardingScreen() {
     <SafeAreaView className="flex-1 bg-white">
       <ScrollView contentContainerClassName="px-5 pb-10 pt-6" keyboardShouldPersistTaps="handled">
         <View className="mb-7 flex-row items-center justify-between">
-          <View className="h-11 w-11 items-center justify-center bg-deplo-black"><Text className="text-xl font-bold text-white">D</Text></View>
+          <Image source={require("../../assets/icon.png")} resizeMode="contain" className="h-11 w-11" />
           <Pressable accessibilityRole="button" accessibilityLabel="Refresh provider connections" onPress={() => void refresh(true)} className="flex-row items-center gap-2 border border-slate-200 px-3 py-2">
             <RefreshCw size={14} color="#111111" />
             <Text className="font-mono text-[10px] font-bold uppercase text-deplo-black">{refreshing ? "Checking" : "Refresh"}</Text>

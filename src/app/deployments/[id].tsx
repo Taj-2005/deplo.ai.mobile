@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { useEffect, useMemo, useState } from "react";
+import { Linking, Pressable, ScrollView, Text, View } from "react-native";
 import * as Clipboard from "expo-clipboard";
 import { router, useLocalSearchParams } from "expo-router";
 import { AlertTriangle, ArrowLeft, Copy, ExternalLink, RefreshCw, RotateCcw } from "lucide-react-native";
@@ -65,11 +65,26 @@ export default function DeploymentDetailScreen() {
     },
   );
   const deployment = deploymentState.data;
+  const { refresh } = deploymentState;
   const appAlert = useAppAlert();
   const [stage, setStage] = useState<"All" | "Install" | "Build" | "Deploy">("All");
   const [actionResult, setActionResult] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionPending, setActionPending] = useState(false);
+
+  const status = deployment?.status;
+  const isTerminal = status === "COMPLETED" || status === "FAILED" || status === "CANCELLED";
+
+  // Mirror the CLI's followDeployment: keep polling while the deployment is
+  // still in flight so a build that finishes on Vercel/Render shows up here
+  // without the user having to pull to refresh.
+  useEffect(() => {
+    if (isDemoMode || !status || isTerminal) return;
+    const interval = setInterval(() => {
+      void refresh();
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [status, isTerminal, refresh]);
 
   const logs = useMemo(
     () => (deployment?.logs ?? []).filter(
@@ -299,18 +314,26 @@ export default function DeploymentDetailScreen() {
         {deployment.frontendUrl || deployment.backendUrl ? (
           <View className="mx-5 mt-5 border border-slate-200 bg-white">
             {deployment.frontendUrl ? (
-              <View className="flex-row items-center gap-3 border-b border-slate-200 p-4">
+              <Pressable
+                accessibilityRole="link"
+                onPress={() => void Linking.openURL(deployment.frontendUrl!)}
+                className="flex-row items-center gap-3 border-b border-slate-200 p-4"
+              >
                 <View className="h-2 w-2 rounded-full bg-green-500" />
                 <Text className="flex-1 text-[12px] text-deplo-black">{deployment.frontendUrl}</Text>
                 <ExternalLink size={14} strokeWidth={1.7} className="text-slate-400" />
-              </View>
+              </Pressable>
             ) : null}
             {deployment.backendUrl ? (
-              <View className="flex-row items-center gap-3 p-4">
+              <Pressable
+                accessibilityRole="link"
+                onPress={() => void Linking.openURL(deployment.backendUrl!)}
+                className="flex-row items-center gap-3 p-4"
+              >
                 <View className="h-2 w-2 rounded-full bg-green-500" />
                 <Text className="flex-1 text-[12px] text-deplo-black">{deployment.backendUrl}</Text>
                 <ExternalLink size={14} strokeWidth={1.7} className="text-slate-400" />
-              </View>
+              </Pressable>
             ) : null}
           </View>
         ) : null}

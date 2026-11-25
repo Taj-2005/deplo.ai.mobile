@@ -1,4 +1,4 @@
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Linking, Pressable, ScrollView, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { ArrowLeft, ExternalLink, GitBranch, Globe, Server } from "lucide-react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -156,24 +156,32 @@ export default function ProjectDetailScreen() {
 
         <View className="mx-5 border border-slate-200 bg-white">
           {(latestDeployment?.frontendUrl ?? project.frontendUrl) ? (
-            <View className="flex-row items-center gap-3 border-b border-slate-200 p-4">
+            <Pressable
+              accessibilityRole="link"
+              onPress={() => void Linking.openURL((latestDeployment?.frontendUrl ?? project.frontendUrl)!)}
+              className="flex-row items-center gap-3 border-b border-slate-200 p-4"
+            >
               <Globe size={16} strokeWidth={1.7} className="text-slate-600" />
               <View className="flex-1">
                 <Text className="font-mono text-[10px] uppercase text-slate-500">Frontend</Text>
                 <Text className="mt-1 text-[12px] text-deplo-black">{latestDeployment?.frontendUrl ?? project.frontendUrl}</Text>
               </View>
               <ExternalLink size={14} strokeWidth={1.7} className="text-slate-400" />
-            </View>
+            </Pressable>
           ) : null}
           {(latestDeployment?.backendUrl ?? project.backendUrl) ? (
-            <View className="flex-row items-center gap-3 p-4">
+            <Pressable
+              accessibilityRole="link"
+              onPress={() => void Linking.openURL((latestDeployment?.backendUrl ?? project.backendUrl)!)}
+              className="flex-row items-center gap-3 p-4"
+            >
               <Server size={16} strokeWidth={1.7} className="text-slate-600" />
               <View className="flex-1">
                 <Text className="font-mono text-[10px] uppercase text-slate-500">Backend</Text>
                 <Text className="mt-1 text-[12px] text-deplo-black">{latestDeployment?.backendUrl ?? project.backendUrl}</Text>
               </View>
               <ExternalLink size={14} strokeWidth={1.7} className="text-slate-400" />
-            </View>
+            </Pressable>
           ) : null}
         </View>
 

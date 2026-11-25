@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Image, Pressable, Text } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { setSessionToken } from "@/lib/session";
@@ -34,9 +34,7 @@ export default function AuthCallbackScreen() {
 
   return (
     <SafeAreaView className="flex-1 items-center justify-center bg-white px-8">
-      <View className="mb-6 h-12 w-12 items-center justify-center rounded-full bg-deplo-black">
-        <Text className="text-xl font-bold text-white">D</Text>
-      </View>
+      <Image source={require("../../../assets/icon.png")} resizeMode="contain" className="mb-6 h-12 w-12" />
       <Text className="text-center text-[18px] font-bold text-deplo-black">{message}</Text>
       {hasFailure ? (
         <Pressable

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Image, Pressable, Text } from "react-native";
 import { router } from "expo-router";
 import { FolderGit2 } from "lucide-react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -73,9 +73,7 @@ export default function SignInScreen() {
 
   return (
     <SafeAreaView className="flex-1 justify-center bg-white px-5">
-      <View className="mb-8 h-14 w-14 items-center justify-center rounded-full bg-deplo-black">
-        <Text className="text-2xl font-bold text-white">D</Text>
-      </View>
+      <Image source={require("../../../assets/icon.png")} resizeMode="contain" className="mb-8 h-14 w-14" />
       <Text className="text-[30px] font-bold tracking-tight text-deplo-black">
         Sign in to Deplo
       </Text>

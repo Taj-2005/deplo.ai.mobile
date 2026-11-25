@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
+import { Image, Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
 import { router } from "expo-router";
 import { Activity, AlertTriangle, ArrowRight, Boxes, CheckCircle2, ChevronRight, Server } from "lucide-react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -113,9 +113,7 @@ export default function OverviewScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View className="flex-row items-center gap-2 px-5 pt-4">
-          <View className="h-7 w-7 items-center justify-center rounded-full bg-deplo-black">
-            <Text className="text-[12px] font-bold text-white">D</Text>
-          </View>
+          <Image source={require("../../../assets/icon.png")} resizeMode="contain" className="h-7 w-7" />
           <Text className="font-mono text-[11px] font-bold uppercase tracking-widest text-deplo-black">
             Deplo
           </Text>
@@ -245,6 +243,19 @@ export default function OverviewScreen() {
               </View>
             ) : null}
           </View>
+
+          {deploymentRows.length > 0 ? (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push("/deployments")}
+              className="mt-3 flex-row items-center justify-center gap-2 border border-slate-200 bg-white px-4 py-3"
+            >
+              <Text className="font-mono text-[11px] font-bold uppercase text-slate-600">
+                View all deployments
+              </Text>
+              <ChevronRight size={13} strokeWidth={2.2} className="text-slate-500" />
+            </Pressable>
+          ) : null}
         </View>
       </ScrollView>
     </SafeAreaView>
