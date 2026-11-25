@@ -5,7 +5,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusPill } from "@/components/status-pill";
 import { getLatestDeployment, getProject } from "@/lib/mobile-data";
 import { useCachedData } from "@/hooks/use-cached-data";
-import { fetchDeployments, fetchRepositories } from "@/lib/api";
+import { fetchDeployments, fetchRepositories, syncRepositories } from "@/lib/api";
 import type { Deployment as ApiDeployment, Repository } from "@/lib/deplo-api";
 import { isDemoMode } from "@/lib/app-config";
 
@@ -39,7 +39,15 @@ export default function ProjectDetailScreen() {
       language: "TypeScript",
       description: null,
       url: `https://github.com/${fallbackProject.repository}`,
-    }] : [] : fetchRepositories,
+    }] : [] : async () => {
+      // Mirrors the CLI's resolveCurrentRepo(): a repo that was just synced
+      // or imported on GitHub may not be in this list yet. Sync once and
+      // retry before giving up, instead of dead-ending on "unavailable".
+      const repos = await fetchRepositories();
+      if (repos.some((repo) => repo.id === id)) return repos;
+      await syncRepositories();
+      return fetchRepositories();
+    },
   );
   const projectRepository = repositoriesState.data?.find((repository) => repository.id === id);
   const latestDeploymentState = useCachedData<LatestDeployment | null>(
@@ -102,9 +110,22 @@ export default function ProjectDetailScreen() {
         ) : (
           <>
             <Text className="text-[16px] font-bold text-deplo-black">Project unavailable</Text>
-            <Pressable onPress={() => router.back()} className="mt-4 border border-slate-200 px-4 py-3">
-              <Text className="font-mono text-[12px] text-slate-600">Go back</Text>
-            </Pressable>
+            <Text className="mt-2 text-center text-[12px] leading-5 text-slate-500">
+              Already synced this repository and still seeing this? It may be private and the
+              GitHub App may not have access yet — check deplo.in → dashboard → repositories.
+            </Text>
+            <View className="mt-5 flex-row gap-3">
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => void repositoriesState.refresh()}
+                className="border border-deplo-black bg-deplo-black px-4 py-3"
+              >
+                <Text className="font-mono text-[12px] font-bold text-white">Try again</Text>
+              </Pressable>
+              <Pressable onPress={() => router.back()} className="border border-slate-200 px-4 py-3">
+                <Text className="font-mono text-[12px] text-slate-600">Go back</Text>
+              </Pressable>
+            </View>
           </>
         )}
       </SafeAreaView>
