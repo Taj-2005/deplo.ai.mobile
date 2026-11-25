@@ -2,6 +2,7 @@ import { Linking, Pressable, ScrollView, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { ArrowLeft, ExternalLink, GitBranch, Globe, Server } from "lucide-react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { BrandLoader } from "@/components/brand-loader";
 import { StatusPill } from "@/components/status-pill";
 import { getLatestDeployment, getProject } from "@/lib/mobile-data";
 import { useCachedData } from "@/hooks/use-cached-data";
@@ -106,7 +107,7 @@ export default function ProjectDetailScreen() {
     return (
       <SafeAreaView className="flex-1 items-center justify-center bg-[#F6FAFE] px-8">
         {repositoriesState.loading ? (
-          <Text className="text-[14px] text-slate-600">Loading project…</Text>
+          <BrandLoader label="Loading project" />
         ) : (
           <>
             <Text className="text-[16px] font-bold text-deplo-black">Project unavailable</Text>

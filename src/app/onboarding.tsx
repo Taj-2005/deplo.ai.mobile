@@ -4,6 +4,7 @@ import { router, useFocusEffect } from "expo-router";
 import { ArrowUpRight, Check, ChevronRight, GitBranch, RefreshCw, Server, TriangleAlert } from "lucide-react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { connectRender, fetchIntegrations, getVercelInstallUrl, type IntegrationStatus } from "@/lib/api";
+import { BrandLoader } from "@/components/brand-loader";
 
 const RENDER_API_KEYS = "https://dashboard.render.com/u/settings#api-keys";
 
@@ -79,8 +80,7 @@ export default function OnboardingScreen() {
 
   if (loading) {
     return <SafeAreaView className="flex-1 items-center justify-center bg-white">
-      <ActivityIndicator color="#111111" />
-      <Text className="mt-3 font-mono text-[11px] uppercase tracking-widest text-slate-500">Loading setup</Text>
+      <BrandLoader label="Loading setup" />
     </SafeAreaView>;
   }
 

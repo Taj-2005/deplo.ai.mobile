@@ -5,6 +5,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { AlertTriangle, ArrowLeft, Copy, ExternalLink, RefreshCw, RotateCcw } from "lucide-react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAppAlert } from "@/components/app-alert";
+import { BrandLoader } from "@/components/brand-loader";
 import { StatusPill } from "@/components/status-pill";
 import { deploymentLogs, getDeployment } from "@/lib/mobile-data";
 import { redeployRepository, fetchDeployment, cancelDeployment } from "@/lib/api";
@@ -97,7 +98,7 @@ export default function DeploymentDetailScreen() {
     return (
       <SafeAreaView className="flex-1 items-center justify-center bg-[#F6FAFE] px-8">
         {deploymentState.loading ? (
-          <Text className="text-[14px] text-slate-600">Loading deployment…</Text>
+          <BrandLoader label="Loading deployment" />
         ) : (
           <>
             <Text className="text-[16px] font-bold text-deplo-black">Deployment unavailable</Text>
